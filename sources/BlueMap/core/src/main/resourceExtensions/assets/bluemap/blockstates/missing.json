@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "": {
-      "renderer": "bluemap:missing",
-      "model": "bluemap:block/missing"
-    }
-  }
-}

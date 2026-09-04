@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "": {
-      "renderer": "bluemap:liquid",
-      "model": "block/water"
-    }
-  }
-}

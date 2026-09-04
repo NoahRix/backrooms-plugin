@@ -1,6 +1,0 @@
-{
-  "parent": "entity/signs/sign",
-  "textures": {
-    "sign": "entity/signs/dark_oak"
-  }
-}

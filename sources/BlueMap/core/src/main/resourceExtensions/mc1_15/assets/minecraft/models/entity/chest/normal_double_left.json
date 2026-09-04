@@ -1,6 +1,0 @@
-{
-	"parent":"entity/chest/chest_double_left",
-    "textures": {
-        "chest": "entity/chest/normal_left"
-	}
-}

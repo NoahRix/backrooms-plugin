@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "entity/chest/ender", "y": 180 },
-    "facing=east": { "model": "entity/chest/ender", "y": 270 },
-    "facing=south": { "model": "entity/chest/ender" },
-    "facing=west": { "model": "entity/chest/ender", "y": 90 }
-  }
-}
