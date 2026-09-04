@@ -1,0 +1,8 @@
+{
+	"replace": false,
+	"values": [
+        "backrooms:air_vent",
+        "backrooms:decaying_bricks",
+        "backrooms:smooth_iron_block"
+    ]
+}

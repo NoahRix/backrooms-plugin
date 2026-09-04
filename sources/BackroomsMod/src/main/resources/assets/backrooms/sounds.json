@@ -1,0 +1,85 @@
+{
+  "light_buzzing": {
+    "sounds": [
+      "backrooms:ambient/light_buzzing"
+    ]
+  },
+  "shallow_buzzing": {
+    "sounds": [
+      {
+        "name": "backrooms:ambient/shallow_buzzing",
+        "stream": true
+      }
+    ],
+    "category": "ambient"
+  },
+  "monster_noise": {
+    "sounds": [
+      {
+        "name": "backrooms:monster/monster_noise_1",
+        "stream": false
+      }
+    ],
+    "category": "ambient"
+  },
+  "noclip": {
+    "subtitle": "subtitle.backrooms.noclip",
+    "sounds": [
+      {
+        "name": "backrooms:effects/noclip_1",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_2",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_3",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_4",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_5",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_6",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_7",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_8",
+        "stream": false
+      }
+    ]
+  },
+  "noclip_small": {
+    "subtitle": "subtitle.backrooms.noclip",
+    "sounds": [
+      {
+        "name": "backrooms:effects/noclip_small_1",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_small_2",
+        "stream": false
+      },
+      {
+        "name": "backrooms:effects/noclip_small_3",
+        "stream": false
+      }
+    ]
+  },
+  "tv_song": {
+    "subtitle": "subtitle.backrooms.tv_song",
+    "sounds": [
+      "backrooms:tv_song"
+    ]
+  }
+}

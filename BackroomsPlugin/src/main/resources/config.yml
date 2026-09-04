@@ -1,0 +1,105 @@
+# BackroomsGen Configuration
+# Multi-level Backrooms world generator with BlueMap & MultiWorld integration
+
+backrooms-world-name: "backrooms"
+
+levels:
+  level0:
+    enabled: true
+    name: "Level 0 - The Lobby"
+    min-y: -64
+    max-y: 0
+    ceiling-height: 4
+    room:
+      min-width: 8
+      max-width: 24
+      min-length: 8
+      max-length: 24
+      wall-material: BIRCH_PLANKS
+      floor-material: LIGHT_GRAY_CONCRETE
+      ceiling-material: SMOOTH_STONE
+    lighting:
+      material: SEA_LANTERN
+      spacing: 5
+    corridor-width: 2
+    special-room-chance: 0.05
+  level1:
+    enabled: true
+    name: "Level 1 - Habitable Zone"
+    min-y: -128
+    max-y: -64
+    ceiling-height: 6
+    room:
+      min-width: 10
+      max-width: 32
+      min-length: 10
+      max-length: 32
+      wall-material: POLISHED_BLACKSTONE_BRICKS
+      floor-material: POLISHED_BLACKSTONE
+      ceiling-material: SMOOTH_STONE
+    lighting:
+      material: SOUL_LANTERN
+      spacing: 7
+    corridor-width: 3
+    special-room-chance: 0.08
+  level2:
+    enabled: true
+    name: "Level 2 - Pipe Dreams"
+    min-y: -192
+    max-y: -128
+    ceiling-height: 5
+    room:
+      min-width: 8
+      max-width: 28
+      min-length: 8
+      max-length: 28
+      wall-material: DEEPSLATE_BRICKS
+      floor-material: DEEPSLATE
+      ceiling-material: SMOOTH_STONE
+    lighting:
+      material: REDSTONE_LAMP
+      spacing: 6
+    corridor-width: 2
+    special-room-chance: 0.10
+
+gameplay:
+  mob-spawning: true
+  loot-generation: true
+  hazards: true
+  hunger-enabled: true
+  pvp: false
+  difficulty: NORMAL
+  spawn-monsters: true
+  spawn-animals: false
+  weather-enabled: false
+
+bluemap:
+  enabled: true
+  markers: true
+  overlays: true
+  dedicated-map: true
+  map-name: "Backrooms"
+  marker-sets:
+    special-rooms:
+      label: "Special Rooms"
+      toggleable: true
+      default-hidden: false
+    hazards:
+      label: "Hazards"
+      toggleable: true
+      default-hidden: false
+    stairwells:
+      label: "Stairwells"
+      toggleable: true
+      default-hidden: false
+    loot:
+      label: "Loot"
+      toggleable: true
+      default-hidden: true
+
+generation:
+  seed: 0
+  grid-cell-size: 16
+  stairwell-chance: 0.02
+  loot-room-chance: 0.04
+  hazard-room-chance: 0.03

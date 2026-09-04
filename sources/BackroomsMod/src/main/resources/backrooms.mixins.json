@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "package": "org.vfast.backrooms.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "PlayerMixins",
+    "ServerPlayerMixins"
+  ],
+  "client": [
+    "AvatarRendererMixins",
+    "BlockColorsMixins",
+    "ChatScreenMixins",
+    "DebugScreenOverlayMixins",
+    "GameRendererMixins",
+    "ImmersiveDimensions",
+    "LocalPlayerMixins",
+    "PlayerTabOverlayMixins",
+    "ScreenEffectRendererMixins"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

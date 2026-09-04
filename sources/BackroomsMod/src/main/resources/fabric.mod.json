@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "backrooms",
+  "version": "${version}",
+  "name": "The Backrooms Mod",
+  "description": "Experience the Backrooms in a whole new way... Noclip out of reality, or go through a null zone, will get you in an infinite and irregular office building...",
+  "authors": [
+    "V-Fast",
+    "Lumaa",
+    "PatateGivree"
+  ],
+  "contributors": [
+    "FirstMegaGame4",
+    "mash113",
+    "mpustovoi",
+    "Clomclem"
+  ],
+  "contact": {
+    "issues": "https://github.com/V-Fast/BackroomsMod/issues",
+    "sources": "https://github.com/V-Fast/BackroomsMod"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "org.vfast.backrooms.BackroomsMod"
+    ],
+    "client": [
+      "org.vfast.backrooms.client.BackroomsModClient"
+    ]
+  },
+  "mixins": [
+    "backrooms.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

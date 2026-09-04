@@ -1,0 +1,32 @@
+{
+  "attributes": {
+    "minecraft:audio/ambient_sounds": {
+      "loop": "backrooms:shallow_buzzing",
+      "mood": {
+        "block_search_extent": 8,
+        "offset": 2,
+        "sound": "backrooms:monster_noise",
+        "tick_delay": 10000
+      }
+    },
+    "minecraft:gameplay/bed_rule": {
+      "can_set_spawn": "never",
+      "can_sleep": "always",
+      "explodes": false,
+      "error_message": {
+        "translate": "block.minecraft.bed.no_sleep"
+      }
+    },
+    "minecraft:visual/ambient_light_color": "#1e1e1e"
+  },
+  "spawn_costs": {},
+  "spawners": {},
+  "features": [],
+  "carvers": [],
+  "effects": {
+    "water_color": "#305245"
+  },
+  "downfall": 0.5,
+  "temperature": 0.5,
+  "has_precipitation": false
+}

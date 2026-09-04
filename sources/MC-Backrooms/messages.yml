@@ -1,0 +1,27 @@
+# ==============================================================================
+#                      DreamCode Backrooms - Sign Post Message Pool
+# ==============================================================================
+# HOW TO ADD CUSTOM MESSAGES:
+# Simply add a new bullet point under 'ominous-messages' using standard text.
+# 
+# FORMATTING RULES:
+# - Always wrap your message in double quotes: "YOUR TEXT HERE"
+# - To keep the text perfectly formatted on vanilla wall signs, try to limit 
+#   each message to 15 characters per line. 
+#
+# IN-GAME ADDITION COMMAND:
+# Admins can use: /backrooms addmsg "Your creepy text here"
+# This will automatically append the line to the bottom of this file.
+# ==============================================================================
+
+ominous-messages:
+  - "TURN AROUND"
+  - "DON'T LOOK BEHIND YOU"
+  - "IT IS LONELY HERE"
+  - "I CAN HEAR THEM"
+  - "NO EXIT THIS WAY"
+  - "THE LIGHTS HUM CHIPS CHIPS"
+  - "STAY IN THE LIGHT"
+  - "DO NOT REMOVE THE BLOCKS"
+  - "THE WALLS ARE DECEPTIVE"
+  - "IT WATCHES FROM THE SECTORS"
