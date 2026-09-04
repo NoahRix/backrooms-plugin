@@ -1,6 +1,0 @@
-name: Backrooms
-version: 1.20.0
-main: com.backrooms.BackroomsPlugin
-api-version: 1.20
-description: a Backrooms world generator plugin.
-author: DreamCoder
