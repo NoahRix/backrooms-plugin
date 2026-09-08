@@ -24,14 +24,9 @@ import java.util.Random;
  *
  * <h2>Multi-floor structure</h2>
  * <p>Level 0 generates 4 floors stacked vertically within its Y range (-64 to 0).
- * Each floor is 8 blocks tall (2-block subfloor + 4-block air space + 2-block ceiling).
+ * Each floor is 7 blocks tall (2-block subfloor + 4-block air space + 1-block ceiling).
  * Floors are connected by stairwells that appear in certain rooms, allowing players
  * to move between floors without leaving the level.</p>
- *
- * <h2>Special features</h2>
- * <p>Level 0 adds scattered <b>carpet patches</b> on the floor to enhance the office
- * aesthetic. These are placed deterministically using the chunk seed so they remain
- * consistent across server restarts.</p>
  *
  * <h2>Configuration defaults (from {@code config.yml})</h2>
  * <table>
@@ -52,21 +47,9 @@ public class Level0Lobby extends BackroomsLevel {
 
     /**
      * Number of floors to generate in Level 0.
-     * Each floor is 8 blocks tall (2 offset + 4 ceiling height + 2 for next floor's offset).
+     * Each floor is 7 blocks tall (2 offset + 4 ceiling height + 1 ceiling block).
      */
     private static final int NUM_FLOORS = 4;
-
-    /**
-     * Probability (0.0&ndash;1.0) that a carpet patch is placed on any given floor block
-     * inside a room. Kept low so carpets feel like scattered remnants rather than wall-to-wall.
-     */
-    private static final double CARPET_CHANCE = 0.02;
-
-    /**
-     * Material used for the scattered carpet patches on the lobby floor.
-     * Yellow wool evokes the classic yellow-carpet look of the original Backrooms.
-     */
-    private static final Material CARPET_MATERIAL = Material.YELLOW_CARPET;
 
     /**
      * Probability (0.0&ndash;1.0) that a sea lantern will flicker.
@@ -106,8 +89,8 @@ public class Level0Lobby extends BackroomsLevel {
         int effectiveMinY = Math.max(config.getMinY(), worldMinY);
         int effectiveMaxY = Math.min(config.getMaxY(), worldMaxY);
 
-        // Calculate floor height: floor offset + ceiling height
-        int floorHeight = getFloorOffset() + config.getCeilingHeight();
+        // Calculate floor height: floor offset + ceiling height + 1 (for the ceiling block itself)
+        int floorHeight = getFloorOffset() + config.getCeilingHeight() + 1;
 
         // Generate each floor
         for (int floorIndex = 0; floorIndex < NUM_FLOORS; floorIndex++) {
@@ -185,7 +168,7 @@ public class Level0Lobby extends BackroomsLevel {
         }
 
         // Create a 3x3 stairwell shaft
-        int floorHeight = getFloorOffset() + config.getCeilingHeight();
+        int floorHeight = getFloorOffset() + config.getCeilingHeight() + 1;
         int nextFloorY = floorY + floorHeight;
 
         for (int dx = -1; dx <= 1; dx++) {
@@ -304,48 +287,6 @@ public class Level0Lobby extends BackroomsLevel {
                         Location loc = new Location(world, globalX, ceilingY, globalZ);
                         flickerManager.markFlickering(loc);
                     }
-                }
-            }
-        }
-    }
-
-    /**
-     * Adds scattered yellow carpet patches on the lobby floor.
-     *
-     * <p>Carpet is placed on top of the floor material at a low probability, using
-     * the chunk seed for deterministic placement. Only blocks inside rooms receive
-     * carpet; corridors remain bare concrete.</p>
-     *
-     * @param chunkData    the mutable chunk data
-     * @param layout       the computed room layout for this chunk
-     * @param floorY       the Y coordinate of the floor surface
-     * @param ceilingY     the Y coordinate of the ceiling surface
-     * @param chunkStartX  world X of the chunk's western edge
-     * @param chunkStartZ  world Z of the chunk's northern edge
-     */
-    @Override
-    protected void generateSpecialFeatures(ChunkGenerator.ChunkData chunkData,
-                                           RoomLayout layout,
-                                           int floorY, int ceilingY,
-                                           int chunkStartX, int chunkStartZ) {
-        if (!layout.overlapsRoom()) {
-            return;
-        }
-
-        Random featureRand = new Random(
-                seed ^ ((long) chunkStartX * 0x9e3779b9L) ^ ((long) chunkStartZ * 0x517cc1b7L) ^ config.getIdHashCode()
-        );
-
-        for (int localX = 0; localX < 16; localX++) {
-            for (int localZ = 0; localZ < 16; localZ++) {
-                int globalX = chunkStartX + localX;
-                int globalZ = chunkStartZ + localZ;
-
-                boolean insideRoom = globalX > layout.roomStartX() && globalX < layout.roomEndX() - 1
-                                  && globalZ > layout.roomStartZ() && globalZ < layout.roomEndZ() - 1;
-
-                if (insideRoom && featureRand.nextDouble() < CARPET_CHANCE) {
-                    chunkData.setBlock(localX, floorY + 1, localZ, CARPET_MATERIAL);
                 }
             }
         }
