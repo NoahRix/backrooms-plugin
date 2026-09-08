@@ -201,10 +201,10 @@ public class BackroomsChunkGenerator extends ChunkGenerator {
     /**
      * Returns a safe spawn location for players entering the Backrooms world.
      *
-     * <p>The spawn point is placed 2 blocks above the floor of the topmost enabled
-     * level, ensuring players don't spawn inside the floor or ceiling. The X and Z
-     * coordinates are fixed at (8.5, 8.5) to place the player in the centre of the
-     * spawn chunk.</p>
+     * <p>The spawn point is placed 2 blocks above the floor of the topmost floor
+     * of Level 0 (which has multiple floors), ensuring players don't spawn inside
+     * the floor or ceiling. The X and Z coordinates are fixed at (8.5, 8.5) to
+     * place the player in the centre of the spawn chunk.</p>
      *
      * @param world  the Backrooms world
      * @param random the world-specific random
@@ -217,8 +217,23 @@ public class BackroomsChunkGenerator extends ChunkGenerator {
 
         if (!enabledLevels.isEmpty()) {
             BackroomsLevel topLevel = enabledLevels.get(0);
-            int floorY = topLevel.getConfig().getMinY() + topLevel.getConfig().getCeilingHeight() - 2;
-            spawnY = floorY + 2;
+            
+            // Check if this is Level 0 with multiple floors
+            if (topLevel instanceof org.derpcraft.backrooms.generator.levels.Level0Lobby) {
+                // Calculate the top floor of Level 0
+                int floorOffset = 2; // Level 0's floor offset
+                int ceilingHeight = topLevel.getConfig().getCeilingHeight();
+                int floorHeight = floorOffset + ceilingHeight;
+                int numFloors = 4; // Level 0 has 4 floors
+                
+                // Top floor starts at: minY + (numFloors - 1) * floorHeight + floorOffset
+                int topFloorY = topLevel.getConfig().getMinY() + ((numFloors - 1) * floorHeight) + floorOffset;
+                spawnY = topFloorY + 2; // 2 blocks above the floor
+            } else {
+                // Single floor level
+                int floorY = topLevel.getConfig().getMinY() + topLevel.getConfig().getCeilingHeight() - 2;
+                spawnY = floorY + 2;
+            }
         }
 
         return new Location(world, 8.5, spawnY, 8.5);

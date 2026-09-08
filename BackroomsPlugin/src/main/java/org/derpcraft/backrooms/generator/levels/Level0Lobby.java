@@ -19,7 +19,14 @@ import java.util.Random;
  *   <li>Light-gray concrete floors reminiscent of worn office carpet</li>
  *   <li>Sea-lantern ceiling lights simulating buzzing fluorescent panels</li>
  *   <li>Small rooms (8&ndash;24 blocks) creating a claustrophobic atmosphere</li>
+ *   <li><b>Multiple floors</b> connected by stairwells for vertical exploration</li>
  * </ul>
+ *
+ * <h2>Multi-floor structure</h2>
+ * <p>Level 0 generates 4 floors stacked vertically within its Y range (-64 to 0).
+ * Each floor is 8 blocks tall (2-block subfloor + 4-block air space + 2-block ceiling).
+ * Floors are connected by stairwells that appear in certain rooms, allowing players
+ * to move between floors without leaving the level.</p>
  *
  * <h2>Special features</h2>
  * <p>Level 0 adds scattered <b>carpet patches</b> on the floor to enhance the office
@@ -34,6 +41,7 @@ import java.util.Random;
  *   <tr><td>Ceiling</td><td>SMOOTH_STONE</td></tr>
  *   <tr><td>Light</td><td>SEA_LANTERN</td></tr>
  *   <tr><td>Ceiling height</td><td>4 blocks</td></tr>
+ *   <tr><td>Number of floors</td><td>4</td></tr>
  * </table>
  *
  * @see BackroomsLevel
@@ -41,6 +49,12 @@ import java.util.Random;
  * @see Level2PipeDreams
  */
 public class Level0Lobby extends BackroomsLevel {
+
+    /**
+     * Number of floors to generate in Level 0.
+     * Each floor is 8 blocks tall (2 offset + 4 ceiling height + 2 for next floor's offset).
+     */
+    private static final int NUM_FLOORS = 4;
 
     /**
      * Probability (0.0&ndash;1.0) that a carpet patch is placed on any given floor block
@@ -61,6 +75,11 @@ public class Level0Lobby extends BackroomsLevel {
     private static final double FLICKER_CHANCE = 0.10;
 
     /**
+     * Probability (0.0&ndash;1.0) that a room contains a stairwell connecting to the next floor.
+     */
+    private static final double STAIRWELL_CHANCE = 0.15;
+
+    /**
      * Constructs the Level 0 &ndash; Lobby generator.
      *
      * @param config the level configuration (materials, room sizes, Y bounds)
@@ -68,6 +87,154 @@ public class Level0Lobby extends BackroomsLevel {
      */
     public Level0Lobby(LevelConfig config, long seed) {
         super(config, seed);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Generates multiple floors stacked vertically within Level 0's Y range.
+     * Each floor is a complete Backrooms layer with its own rooms, walls, lighting,
+     * and special features. Floors are connected by stairwells that appear in
+     * certain rooms based on a deterministic seed.</p>
+     */
+    @Override
+    public void generate(ChunkGenerator.ChunkData chunkData,
+                         int chunkStartX, int chunkStartZ,
+                         int chunkEndX, int chunkEndZ,
+                         int worldMinY, int worldMaxY) {
+
+        int effectiveMinY = Math.max(config.getMinY(), worldMinY);
+        int effectiveMaxY = Math.min(config.getMaxY(), worldMaxY);
+
+        // Calculate floor height: floor offset + ceiling height
+        int floorHeight = getFloorOffset() + config.getCeilingHeight();
+
+        // Generate each floor
+        for (int floorIndex = 0; floorIndex < NUM_FLOORS; floorIndex++) {
+            int floorBaseY = effectiveMinY + (floorIndex * floorHeight);
+            int floorY = floorBaseY + getFloorOffset();
+            int ceilingY = floorY + config.getCeilingHeight();
+
+            // Check if this floor fits within the world bounds
+            if (ceilingY > effectiveMaxY) {
+                break; // No more room for this floor
+            }
+            if (floorY >= ceilingY) {
+                continue; // Skip invalid floors
+            }
+
+            // Generate this floor's structure
+            generateFloorAndCeiling(chunkData, floorY, ceilingY);
+
+            RoomLayout layout = calculateRoomLayout(chunkStartX, chunkStartZ, chunkEndX, chunkEndZ);
+
+            generateWallsAndDoorways(chunkData, layout, floorY, ceilingY, chunkStartX, chunkStartZ);
+
+            generateLighting(chunkData, layout, ceilingY, chunkStartX, chunkStartZ);
+
+            generateLootChest(chunkData, layout, floorY, chunkStartX, chunkStartZ);
+
+            generateSpecialFeatures(chunkData, layout, floorY, ceilingY, chunkStartX, chunkStartZ);
+
+            // Generate stairwell if this isn't the top floor and the room qualifies
+            if (floorIndex < NUM_FLOORS - 1 && layout.overlapsRoom()) {
+                generateStairwell(chunkData, layout, floorY, ceilingY, chunkStartX, chunkStartZ, floorIndex);
+            }
+        }
+    }
+
+    /**
+     * Generates a stairwell connecting this floor to the next floor above.
+     *
+     * <p>Stairwells are placed in rooms based on a deterministic seed. They consist
+     * of a vertical shaft with stairs going up to the next floor. The stairwell
+     * cuts through the ceiling of the current floor and the floor of the next floor.</p>
+     *
+     * @param chunkData    the mutable chunk data
+     * @param layout       the computed room layout for this chunk
+     * @param floorY       the Y coordinate of the current floor surface
+     * @param ceilingY     the Y coordinate of the current floor's ceiling
+     * @param chunkStartX  world X of the chunk's western edge
+     * @param chunkStartZ  world Z of the chunk's northern edge
+     * @param floorIndex   the index of the current floor (0 = bottom)
+     */
+    private void generateStairwell(ChunkGenerator.ChunkData chunkData,
+                                   RoomLayout layout,
+                                   int floorY, int ceilingY,
+                                   int chunkStartX, int chunkStartZ,
+                                   int floorIndex) {
+        // Determine if this room has a stairwell
+        long stairwellSeed = seed ^ ((long) chunkStartX * 0x6a09e667L) ^ ((long) chunkStartZ * 0xbb67ae85L)
+                           ^ config.getIdHashCode() ^ (floorIndex * 0x9e3779b9L);
+        Random stairwellRand = new Random(stairwellSeed);
+
+        if (stairwellRand.nextDouble() >= STAIRWELL_CHANCE) {
+            return; // No stairwell in this room
+        }
+
+        // Position the stairwell in the center of the room
+        int roomCenterX = (layout.roomStartX() + layout.roomEndX()) / 2;
+        int roomCenterZ = (layout.roomStartZ() + layout.roomEndZ()) / 2;
+
+        // Check if the stairwell position is within this chunk
+        int localX = roomCenterX - chunkStartX;
+        int localZ = roomCenterZ - chunkStartZ;
+
+        if (localX < 0 || localX >= 16 || localZ < 0 || localZ >= 16) {
+            return; // Stairwell is in a different chunk
+        }
+
+        // Create a 3x3 stairwell shaft
+        int floorHeight = getFloorOffset() + config.getCeilingHeight();
+        int nextFloorY = floorY + floorHeight;
+
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int x = localX + dx;
+                int z = localZ + dz;
+
+                if (x < 0 || x >= 16 || z < 0 || z >= 16) {
+                    continue;
+                }
+
+                // Clear the shaft from current floor to next floor
+                for (int y = floorY; y < nextFloorY; y++) {
+                    chunkData.setBlock(x, y, z, Material.AIR);
+                }
+
+                // Place stairs going up (spiral pattern)
+                // Bottom layer: stairs facing north
+                if (dx == 0 && dz == -1) {
+                    chunkData.setBlock(x, floorY + 1, z, Material.OAK_STAIRS);
+                }
+                // Middle layers: alternating stairs
+                else if (dx == 1 && dz == 0) {
+                    chunkData.setBlock(x, floorY + 2, z, Material.OAK_STAIRS);
+                }
+                else if (dx == 0 && dz == 1) {
+                    chunkData.setBlock(x, floorY + 3, z, Material.OAK_STAIRS);
+                }
+                // Top layer: stairs facing west to reach next floor
+                else if (dx == -1 && dz == 0) {
+                    chunkData.setBlock(x, floorY + 4, z, Material.OAK_STAIRS);
+                }
+
+                // Place walls around the stairwell
+                if (Math.abs(dx) == 1 || Math.abs(dz) == 1) {
+                    for (int y = floorY + 1; y < nextFloorY; y++) {
+                        if (dx == -1 || dx == 1 || dz == -1 || dz == 1) {
+                            // Only place walls on the edges, not corners
+                            if ((Math.abs(dx) == 1 && dz == 0) || (Math.abs(dz) == 1 && dx == 0)) {
+                                chunkData.setBlock(x, y, z, config.getWallMaterial());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add a light in the stairwell
+        chunkData.setBlock(localX, nextFloorY - 1, localZ, Material.SEA_LANTERN);
     }
 
     /**
