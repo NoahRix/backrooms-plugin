@@ -26,8 +26,8 @@ levels:
   level1:
     enabled: true
     name: "Level 1 - Habitable Zone"
-    min-y: -128
-    max-y: -64
+    min-y: 0
+    max-y: 64
     ceiling-height: 6
     room:
       min-width: 10
@@ -45,8 +45,8 @@ levels:
   level2:
     enabled: true
     name: "Level 2 - Pipe Dreams"
-    min-y: -192
-    max-y: -128
+    min-y: 64
+    max-y: 128
     ceiling-height: 5
     room:
       min-width: 8

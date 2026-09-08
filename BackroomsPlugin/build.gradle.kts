@@ -3,7 +3,7 @@ plugins {
     id("com.gradleup.shadow") version "8.3.6"
 }
 
-group = "com.derpcraft.backrooms"
+group = "org.derpcraft.backrooms"
 version = "1.0.0"
 
 java {

@@ -1,7 +1,7 @@
-package com.derpcraft.backrooms.commands;
+package org.derpcraft.backrooms.commands;
 
-import com.derpcraft.backrooms.BackroomsPlugin;
-import com.derpcraft.backrooms.config.LevelConfig;
+import org.derpcraft.backrooms.BackroomsPlugin;
+import org.derpcraft.backrooms.config.LevelConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
@@ -10,19 +10,46 @@ import org.bukkit.WorldCreator;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
+/**
+ * Handles the {@code /backroomsadmin} command for server administrators.
+ *
+ * <p>Provides administrative commands for managing the Backrooms world:</p>
+ * <ul>
+ *   <li>{@code /backroomsadmin create} &ndash; creates the Backrooms world</li>
+ *   <li>{@code /backroomsadmin reload} &ndash; reloads the plugin configuration</li>
+ *   <li>{@code /backroomsadmin setlevel <id>} &ndash; shows detailed info about a level</li>
+ *   <li>{@code /backroomsadmin info} &ndash; shows general plugin information</li>
+ * </ul>
+ *
+ * <p>All subcommands require the {@code backrooms.admin} permission.</p>
+ *
+ * @see BackroomsCommand
+ */
 public class BackroomsAdminCommand implements CommandExecutor {
 
+    /** Reference to the owning plugin instance. */
     private final BackroomsPlugin plugin;
 
+    /**
+     * Constructs a new admin command executor.
+     *
+     * @param plugin the owning plugin instance
+     */
     public BackroomsAdminCommand(BackroomsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Executes the {@code /backroomsadmin} command and dispatches to the appropriate subcommand.
+     *
+     * @param sender  the command sender
+     * @param command the command
+     * @param label   the command label
+     * @param args    the command arguments
+     * @return always {@code true}
+     */
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!sender.hasPermission("backrooms.admin")) {
@@ -45,6 +72,11 @@ public class BackroomsAdminCommand implements CommandExecutor {
         return true;
     }
 
+    /**
+     * Creates the Backrooms world using the configured generator.
+     *
+     * @param sender the command sender
+     */
     private void handleCreate(@NotNull CommandSender sender) {
         String worldName = plugin.getBackroomsConfig().getBackroomsWorldName();
 
@@ -75,6 +107,11 @@ public class BackroomsAdminCommand implements CommandExecutor {
         }
     }
 
+    /**
+     * Applies configured game settings to the Backrooms world.
+     *
+     * @param world the Backrooms world
+     */
     private void applyWorldSettings(@NotNull World world) {
         var cfg = plugin.getBackroomsConfig();
         try {
@@ -87,11 +124,22 @@ public class BackroomsAdminCommand implements CommandExecutor {
         world.setGameRuleValue("doWeatherCycle", String.valueOf(cfg.isWeatherEnabled()));
     }
 
+    /**
+     * Reloads the plugin configuration.
+     *
+     * @param sender the command sender
+     */
     private void handleReload(@NotNull CommandSender sender) {
         plugin.reload();
         sender.sendMessage(ChatColor.GREEN + "BackroomsGen configuration reloaded!");
     }
 
+    /**
+     * Shows detailed information about a specific level.
+     *
+     * @param sender the command sender
+     * @param args   the command arguments (args[1] is the level ID)
+     */
     private void handleSetLevel(@NotNull CommandSender sender, @NotNull String[] args) {
         if (args.length < 2) {
             sender.sendMessage(ChatColor.RED + "Usage: /backroomsadmin setlevel <levelId>");
@@ -117,6 +165,11 @@ public class BackroomsAdminCommand implements CommandExecutor {
         sender.sendMessage(ChatColor.GRAY + "  Light: " + level.getLightMaterial());
     }
 
+    /**
+     * Shows general plugin information.
+     *
+     * @param sender the command sender
+     */
     private void handleInfo(@NotNull CommandSender sender) {
         sender.sendMessage(ChatColor.GOLD + "=== BackroomsGen Info ===");
         sender.sendMessage(ChatColor.GRAY + "Version: " + ChatColor.WHITE + plugin.getDescription().getVersion());
@@ -132,6 +185,11 @@ public class BackroomsAdminCommand implements CommandExecutor {
         sender.sendMessage(ChatColor.GRAY + "World Loaded: " + ChatColor.WHITE + (world != null ? "Yes" : "No"));
     }
 
+    /**
+     * Sends the help message listing all available subcommands.
+     *
+     * @param sender the command sender
+     */
     private void sendHelp(@NotNull CommandSender sender) {
         sender.sendMessage(ChatColor.GOLD + "=== BackroomsGen Admin Commands ===");
         sender.sendMessage(ChatColor.YELLOW + "/backroomsadmin create" + ChatColor.GRAY + " - Create the Backrooms world");

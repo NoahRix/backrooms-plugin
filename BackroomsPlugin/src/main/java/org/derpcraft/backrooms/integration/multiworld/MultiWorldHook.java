@@ -1,6 +1,6 @@
-package com.derpcraft.backrooms.integration.multiworld;
+package org.derpcraft.backrooms.integration.multiworld;
 
-import com.derpcraft.backrooms.BackroomsPlugin;
+import org.derpcraft.backrooms.BackroomsPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

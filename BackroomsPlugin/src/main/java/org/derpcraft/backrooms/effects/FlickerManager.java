@@ -1,0 +1,149 @@
+package org.derpcraft.backrooms.effects;
+
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Manages flickering fluorescent light effects for the Backrooms world.
+ *
+ * <p>Tracks which lantern positions should flicker and manages per-player
+ * {@link FlickerTask} instances that send block change packets to create
+ * the visual flicker effect without modifying actual blocks.</p>
+ *
+ * <h2>How it works</h2>
+ * <ol>
+ *   <li>During world generation, {@code Level0Lobby} marks 10% of sea lanterns
+ *       as flickering by calling {@link #markFlickering(Location)}</li>
+ *   <li>When a player enters the Backrooms world, a {@link FlickerTask} is
+ *       started for them via {@link #startFlickering(Player)}</li>
+ *   <li>The task finds nearby flickering lanterns and sends packet-based
+ *       block changes to make them appear to flicker</li>
+ *   <li>When the player leaves, the task is cancelled via {@link #stopFlickering(Player)}</li>
+ * </ol>
+ *
+ * @see FlickerTask
+ */
+public class FlickerManager {
+
+    /** The plugin instance. */
+    private final JavaPlugin plugin;
+
+    /** Set of all locations that should flicker (populated during world generation). */
+    private final Set<Location> flickeringLanterns = ConcurrentHashMap.newKeySet();
+
+    /** Map of player UUID to their active flicker task. */
+    private final Map<UUID, FlickerTask> playerTasks = new ConcurrentHashMap<>();
+
+    /**
+     * Constructs a new flicker manager.
+     *
+     * @param plugin the plugin instance
+     */
+    public FlickerManager(JavaPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    /**
+     * Marks a lantern location as flickering.
+     *
+     * <p>Called during world generation to register which sea lanterns should
+     * have the flicker effect. The location is stored in a concurrent set for
+     * thread-safe access from generation threads.</p>
+     *
+     * @param location the lantern location to mark
+     */
+    public void markFlickering(Location location) {
+        flickeringLanterns.add(location);
+    }
+
+    /**
+     * Returns whether a location is marked as flickering.
+     *
+     * @param location the location to check
+     * @return true if the location should flicker
+     */
+    public boolean isFlickering(Location location) {
+        return flickeringLanterns.contains(location);
+    }
+
+    /**
+     * Returns all flickering lantern locations.
+     *
+     * @return unmodifiable view of flickering locations
+     */
+    public Set<Location> getFlickeringLanterns() {
+        return Set.copyOf(flickeringLanterns);
+    }
+
+    /**
+     * Starts the flicker effect for a player.
+     *
+     * <p>Creates and schedules a new {@link FlickerTask} for the player that
+     * will periodically send block change packets to make nearby flickering
+     * lanterns appear to flicker.</p>
+     *
+     * @param player the player to start flickering for
+     */
+    public void startFlickering(Player player) {
+        if (playerTasks.containsKey(player.getUniqueId())) {
+            return; // Already running
+        }
+
+        FlickerTask task = new FlickerTask(this, player);
+        playerTasks.put(player.getUniqueId(), task);
+        task.runTaskTimer(plugin, 0L, 3L); // Every 3 ticks
+    }
+
+    /**
+     * Stops the flicker effect for a player.
+     *
+     * <p>Cancels the player's {@link FlickerTask} and restores any blocks
+     * that were mid-flicker to their original state.</p>
+     *
+     * @param player the player to stop flickering for
+     */
+    public void stopFlickering(Player player) {
+        FlickerTask task = playerTasks.remove(player.getUniqueId());
+        if (task != null) {
+            task.cancel();
+            task.restoreAll();
+        }
+    }
+
+    /**
+     * Stops all flicker tasks.
+     *
+     * <p>Called during plugin shutdown to clean up all active tasks.</p>
+     */
+    public void shutdown() {
+        for (FlickerTask task : playerTasks.values()) {
+            task.cancel();
+            task.restoreAll();
+        }
+        playerTasks.clear();
+    }
+
+    /**
+     * Returns the number of active flicker tasks.
+     *
+     * @return count of players with active flicker effects
+     */
+    public int getActiveTaskCount() {
+        return playerTasks.size();
+    }
+
+    /**
+     * Returns the plugin instance.
+     *
+     * @return the plugin
+     */
+    public JavaPlugin getPlugin() {
+        return plugin;
+    }
+}

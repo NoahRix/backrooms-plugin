@@ -1,6 +1,6 @@
-package com.derpcraft.backrooms.integration.worldguard;
+package org.derpcraft.backrooms.integration.worldguard;
 
-import com.derpcraft.backrooms.BackroomsPlugin;
+import org.derpcraft.backrooms.BackroomsPlugin;
 
 public class WorldGuardHook {
 

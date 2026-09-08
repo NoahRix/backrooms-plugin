@@ -1,7 +1,7 @@
-package com.derpcraft.backrooms.integration.bluemap;
+package org.derpcraft.backrooms.integration.bluemap;
 
-import com.derpcraft.backrooms.BackroomsPlugin;
-import com.derpcraft.backrooms.config.LevelConfig;
+import org.derpcraft.backrooms.BackroomsPlugin;
+import org.derpcraft.backrooms.config.LevelConfig;
 import de.bluecolored.bluemap.api.BlueMapAPI;
 import de.bluecolored.bluemap.api.BlueMapMap;
 import de.bluecolored.bluemap.api.BlueMapWorld;

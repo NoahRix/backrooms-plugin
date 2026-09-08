@@ -1,6 +1,6 @@
 name: BackroomsGen
 version: '1.0.0'
-main: com.derpcraft.backrooms.BackroomsPlugin
+main: org.derpcraft.backrooms.BackroomsPlugin
 api-version: '1.21'
 load: STARTUP
 softdepend:
