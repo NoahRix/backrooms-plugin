@@ -144,8 +144,11 @@ public class PlayerListener implements Listener {
         Player player = event.getPlayer();
         if (!player.getWorld().getName().equals(backroomsWorldName)) return;
 
-        int y = player.getLocation().getBlockY();
-        LevelConfig level = plugin.getBackroomsConfig().getLevelForY(y);
+        // Levels are arranged as ripple rings around spawn, so the level depends
+        // on the player's chunk, not their Y coordinate.
+        LevelConfig level = plugin.getBackroomsConfig().getLevelForChunk(
+                player.getLocation().getBlockX() >> 4,
+                player.getLocation().getBlockZ() >> 4);
         if (level != null) {
             player.sendActionBar(ChatColor.GOLD + level.getName());
         }
@@ -157,8 +160,9 @@ public class PlayerListener implements Listener {
      * @param player the player to message
      */
     private void sendLevelMessage(Player player) {
-        int y = player.getLocation().getBlockY();
-        LevelConfig level = plugin.getBackroomsConfig().getLevelForY(y);
+        LevelConfig level = plugin.getBackroomsConfig().getLevelForChunk(
+                player.getLocation().getBlockX() >> 4,
+                player.getLocation().getBlockZ() >> 4);
         if (level != null) {
             player.sendMessage(ChatColor.GOLD + "You are in " + ChatColor.YELLOW + level.getName());
         }

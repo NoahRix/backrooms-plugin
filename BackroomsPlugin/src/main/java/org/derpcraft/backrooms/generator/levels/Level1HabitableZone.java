@@ -67,11 +67,13 @@ public class Level1HabitableZone extends BackroomsLevel {
     /**
      * {@inheritDoc}
      *
-     * <p>The Habitable Zone has a 2-block sub-floor, consistent with the Lobby above.</p>
+     * <p>The Habitable Zone uses a 1-block sub-floor so its walking surface aligns
+     * with the other levels — with the ripple layout, adjacent rings must share the
+     * same floor height for seamless transitions.</p>
      */
     @Override
     protected int getFloorOffset() {
-        return 2;
+        return 1;
     }
 
     /**

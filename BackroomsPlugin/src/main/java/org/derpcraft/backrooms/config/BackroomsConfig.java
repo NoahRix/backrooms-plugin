@@ -1,6 +1,7 @@
 package org.derpcraft.backrooms.config;
 
 import org.derpcraft.backrooms.generator.levels.BackroomsLevel;
+import org.derpcraft.backrooms.generator.levels.GenericBackroomsLevel;
 import org.derpcraft.backrooms.generator.levels.Level0Lobby;
 import org.derpcraft.backrooms.generator.levels.Level1HabitableZone;
 import org.derpcraft.backrooms.generator.levels.Level2PipeDreams;
@@ -104,8 +105,11 @@ public class BackroomsConfig {
     /** Cached list of enabled level configs, sorted by Y descending (topmost first). */
     private List<LevelConfig> enabledLevelsCache = null;
 
-    /** Cached list of enabled {@link BackroomsLevel} instances, sorted by Y descending. */
-    private List<BackroomsLevel> enabledLevelInstancesCache = null;
+    /** Cached list of enabled level configs, sorted by ring radius ascending (centre first). */
+    private List<LevelConfig> radiusSortedCache = null;
+
+    /** Cached map of level ID to enabled {@link BackroomsLevel} generator instance. */
+    private Map<String, BackroomsLevel> levelInstancesCache = null;
 
     /**
      * Constructs a new configuration loader.
@@ -150,7 +154,8 @@ public class BackroomsConfig {
 
         levels.clear();
         enabledLevelsCache = null;
-        enabledLevelInstancesCache = null;
+        radiusSortedCache = null;
+        levelInstancesCache = null;
 
         ConfigurationSection levelsSection = cfg.getConfigurationSection("levels");
         if (levelsSection != null) {
@@ -164,6 +169,8 @@ public class BackroomsConfig {
                 lc.setName(ls.getString("name", key));
                 lc.setMinY(ls.getInt("min-y", -64));
                 lc.setMaxY(ls.getInt("max-y", 0));
+                lc.setMinRadius(ls.getInt("min-radius", 0));
+                lc.setMaxRadius(ls.getInt("max-radius", -1));
                 lc.setCeilingHeight(ls.getInt("ceiling-height", 4));
 
                 ConfigurationSection room = ls.getConfigurationSection("room");
@@ -192,6 +199,26 @@ public class BackroomsConfig {
     }
 
     /**
+     * Returns the list of enabled level configs, sorted by ring radius ascending.
+     *
+     * <p>The centre-most level (smallest {@code min-radius}) comes first. Results are
+     * cached after the first call and invalidated when {@link #load()} is called again.</p>
+     *
+     * @return an unmodifiable list of enabled level configs, centre-out
+     */
+    public List<LevelConfig> getRadiusSortedLevels() {
+        if (radiusSortedCache == null) {
+            List<LevelConfig> enabled = new ArrayList<>();
+            for (LevelConfig lc : levels.values()) {
+                if (lc.isEnabled()) enabled.add(lc);
+            }
+            enabled.sort((a, b) -> Integer.compare(a.getMinRadius(), b.getMinRadius()));
+            radiusSortedCache = enabled;
+        }
+        return radiusSortedCache;
+    }
+
+    /**
      * Returns the list of enabled {@link LevelConfig} data objects, sorted by Y descending.
      *
      * <p>The topmost level (highest minY) comes first. Results are cached after the
@@ -201,10 +228,7 @@ public class BackroomsConfig {
      */
     public List<LevelConfig> getEnabledLevels() {
         if (enabledLevelsCache == null) {
-            List<LevelConfig> enabled = new ArrayList<>();
-            for (LevelConfig lc : levels.values()) {
-                if (lc.isEnabled()) enabled.add(lc);
-            }
+            List<LevelConfig> enabled = new ArrayList<>(getRadiusSortedLevels());
             enabled.sort((a, b) -> Integer.compare(b.getMinY(), a.getMinY()));
             enabledLevelsCache = enabled;
         }
@@ -212,7 +236,34 @@ public class BackroomsConfig {
     }
 
     /**
-     * Returns the list of enabled {@link BackroomsLevel} generator instances, sorted by Y descending.
+     * Returns the level whose ring contains the given chunk, or {@code null} if the
+     * chunk lies outside every configured ring.
+     *
+     * <p>The world is arranged as concentric "ripple" rings around spawn (chunk 0,0):
+     * each chunk belongs to exactly one level, chosen by the Euclidean distance of the
+     * chunk's centre from the world origin measured in blocks. A chunk matches a level
+     * when {@code minRadius <= dist} and ({@code maxRadius < 0} or {@code dist < maxRadius}).</p>
+     *
+     * @param chunkX the chunk's X coordinate
+     * @param chunkZ the chunk's Z coordinate
+     * @return the level config owning this chunk, or {@code null} for unclaimed chunks
+     */
+    public LevelConfig getLevelForChunk(int chunkX, int chunkZ) {
+        double cx = chunkX * 16.0 + 8.0;
+        double cz = chunkZ * 16.0 + 8.0;
+        double dist = Math.sqrt(cx * cx + cz * cz);
+
+        for (LevelConfig lc : getRadiusSortedLevels()) {
+            if (dist >= lc.getMinRadius()
+                    && (lc.getMaxRadius() < 0 || dist < lc.getMaxRadius())) {
+                return lc;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the enabled {@link BackroomsLevel} generator instances keyed by level ID.
      *
      * <p>Each level config is mapped to its concrete generator class:</p>
      * <ul>
@@ -221,23 +272,43 @@ public class BackroomsConfig {
      *   <li>{@code level2} &rarr; {@link Level2PipeDreams}</li>
      * </ul>
      *
-     * <p>Unknown level IDs fall back to {@link Level0Lobby} as a safe default.</p>
+     * <p>Unknown level IDs fall back to {@link GenericBackroomsLevel} so new levels can
+     * be added purely through configuration.</p>
+     *
+     * @return an unmodifiable map of level ID to generator instance (enabled levels only)
+     */
+    public Map<String, BackroomsLevel> getLevelInstances() {
+        if (levelInstancesCache == null) {
+            Map<String, BackroomsLevel> instances = new HashMap<>();
+            long seed = generationSeed != 0 ? generationSeed : 0;
+
+            for (LevelConfig lc : getRadiusSortedLevels()) {
+                instances.put(lc.getId(), createLevelInstance(lc, seed));
+            }
+
+            levelInstancesCache = instances;
+        }
+        return levelInstancesCache;
+    }
+
+    /**
+     * Returns the generator instance for a single level ID, or {@code null} when the
+     * level is unknown or disabled.
+     *
+     * @param id the level ID (e.g. "level0")
+     * @return the level's generator instance, or {@code null}
+     */
+    public BackroomsLevel getLevelInstanceById(String id) {
+        return getLevelInstances().get(id);
+    }
+
+    /**
+     * Returns all enabled {@link BackroomsLevel} generator instances.
      *
      * @return a list of enabled level generator instances
      */
     public List<BackroomsLevel> getEnabledLevelInstances() {
-        if (enabledLevelInstancesCache == null) {
-            List<BackroomsLevel> instances = new ArrayList<>();
-            long seed = generationSeed != 0 ? generationSeed : 0;
-
-            for (LevelConfig lc : getEnabledLevels()) {
-                BackroomsLevel level = createLevelInstance(lc, seed);
-                instances.add(level);
-            }
-
-            enabledLevelInstancesCache = instances;
-        }
-        return enabledLevelInstancesCache;
+        return new ArrayList<>(getLevelInstances().values());
     }
 
     /**
@@ -252,23 +323,8 @@ public class BackroomsConfig {
             case "level0" -> new Level0Lobby(lc, seed);
             case "level1" -> new Level1HabitableZone(lc, seed);
             case "level2" -> new Level2PipeDreams(lc, seed);
-            default -> new Level0Lobby(lc, seed);
+            default -> new GenericBackroomsLevel(lc, seed);
         };
-    }
-
-    /**
-     * Returns the {@link LevelConfig} for the level that contains the given Y coordinate.
-     *
-     * @param y the Y coordinate to look up
-     * @return the level config at that Y, or {@code null} if no level covers it
-     */
-    public LevelConfig getLevelForY(int y) {
-        for (LevelConfig lc : levels.values()) {
-            if (lc.isEnabled() && y >= lc.getMinY() && y < lc.getMaxY()) {
-                return lc;
-            }
-        }
-        return null;
     }
 
     // -------------------------------------------------------------------------

@@ -2,6 +2,7 @@ package org.derpcraft.backrooms.generator;
 
 import org.derpcraft.backrooms.config.BackroomsConfig;
 import org.derpcraft.backrooms.config.LevelConfig;
+import org.derpcraft.backrooms.generator.levels.BackroomsLevel;
 import org.bukkit.Material;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.LimitedRegion;
@@ -9,7 +10,6 @@ import org.bukkit.generator.WorldInfo;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -44,8 +44,9 @@ public class BackroomsPopulator extends BlockPopulator {
     /**
      * Populates a chunk with loot containers and hazards.
      *
-     * <p>For each enabled level, iterates over the chunk's floor blocks and randomly
-     * places loot or hazard blocks based on the configured probabilities.</p>
+     * <p>Only the level whose ripple ring contains this chunk is populated: the
+     * populator walks the chunk's ground-floor surface blocks and randomly places
+     * loot or hazard blocks based on the configured probabilities.</p>
      *
      * @param worldInfo    information about the world
      * @param random       the chunk-specific random
@@ -56,32 +57,33 @@ public class BackroomsPopulator extends BlockPopulator {
     @Override
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random,
                          int chunkX, int chunkZ, @NotNull LimitedRegion limitedRegion) {
-        List<LevelConfig> levels = config.getEnabledLevels();
-        if (levels.isEmpty()) return;
+        LevelConfig level = config.getLevelForChunk(chunkX, chunkZ);
+        if (level == null || !level.isEnabled()) return;
+
+        BackroomsLevel instance = config.getLevelInstanceById(level.getId());
+        if (instance == null) return;
 
         long seed = config.getGenerationSeed() != 0 ? config.getGenerationSeed() : worldInfo.getSeed();
         Random seededRandom = new Random(seed ^ ((long) chunkX * 341873128712L + (long) chunkZ * 132897987541L));
 
-        for (LevelConfig level : levels) {
-            int levelFloor = level.getMinY();
+        int floorSurfaceY = instance.getFloorSurfaceY();
 
-            for (int x = 0; x < 16; x++) {
-                for (int z = 0; z < 16; z++) {
-                    int globalX = chunkX * 16 + x;
-                    int globalZ = chunkZ * 16 + z;
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                int globalX = chunkX * 16 + x;
+                int globalZ = chunkZ * 16 + z;
 
-                    if (!limitedRegion.isInRegion(globalX, levelFloor + 1, globalZ)) continue;
+                if (!limitedRegion.isInRegion(globalX, floorSurfaceY + 1, globalZ)) continue;
 
-                    Material floorBelow = limitedRegion.getType(globalX, levelFloor, globalZ);
-                    if (floorBelow != level.getFloorMaterial()) continue;
+                Material floorBelow = limitedRegion.getType(globalX, floorSurfaceY, globalZ);
+                if (floorBelow != level.getFloorMaterial()) continue;
 
-                    if (config.isLootGeneration() && seededRandom.nextDouble() < 0.005) {
-                        placeLoot(limitedRegion, globalX, levelFloor + 1, globalZ, seededRandom);
-                    }
+                if (config.isLootGeneration() && seededRandom.nextDouble() < 0.005) {
+                    placeLoot(limitedRegion, globalX, floorSurfaceY + 1, globalZ, seededRandom);
+                }
 
-                    if (config.isHazards() && seededRandom.nextDouble() < 0.003) {
-                        placeHazard(limitedRegion, globalX, levelFloor + 1, globalZ, seededRandom, level);
-                    }
+                if (config.isHazards() && seededRandom.nextDouble() < 0.003) {
+                    placeHazard(limitedRegion, globalX, floorSurfaceY + 1, globalZ, seededRandom, level);
                 }
             }
         }

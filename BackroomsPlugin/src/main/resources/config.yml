@@ -1,5 +1,22 @@
 # BackroomsGen Configuration
 # Multi-level Backrooms world generator with BlueMap & MultiWorld integration
+#
+# == LEVEL LAYOUT: RIPPLE RINGS ==
+# Levels are arranged as concentric rings around world spawn (0,0), like ripples
+# spreading outward. Every chunk belongs to exactly ONE level, chosen by the
+# chunk centre's distance from spawn:
+#
+#   distance = sqrt(chunkCentreX^2 + chunkCentreZ^2)   (in blocks)
+#
+# A chunk matches a level when:  min-radius <= distance  and  distance < max-radius
+# (max-radius: -1 means the ring extends to infinity).
+#
+# To add a new level, add a config entry with a unique id, set its ring radii to
+# tile outward from the previous level, and (optionally) implement a dedicated
+# generator subclass later. Levels without a subclass use the generic generator.
+#
+# Keep every level's min-y/max-y identical (and floor heights matching) if you
+# want players to walk seamlessly from one ring into the next.
 
 backrooms-world-name: "backrooms"
 
@@ -7,6 +24,8 @@ levels:
   level0:
     enabled: true
     name: "Level 0 - The Lobby"
+    min-radius: 0
+    max-radius: 400
     min-y: -64
     max-y: 0
     ceiling-height: 4
@@ -26,8 +45,10 @@ levels:
   level1:
     enabled: true
     name: "Level 1 - Habitable Zone"
-    min-y: 0
-    max-y: 64
+    min-radius: 400
+    max-radius: 1200
+    min-y: -64
+    max-y: 0
     ceiling-height: 6
     room:
       min-width: 10
@@ -45,8 +66,10 @@ levels:
   level2:
     enabled: true
     name: "Level 2 - Pipe Dreams"
-    min-y: 64
-    max-y: 128
+    min-radius: 1200
+    max-radius: -1
+    min-y: -64
+    max-y: 0
     ceiling-height: 5
     room:
       min-width: 8

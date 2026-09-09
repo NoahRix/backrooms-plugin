@@ -124,6 +124,16 @@ public abstract class BackroomsLevel {
     }
 
     /**
+     * Returns the world Y coordinate of this level's ground floor surface
+     * (the block players walk on for the bottom-most floor).
+     *
+     * @return {@code config.getMinY() + getFloorOffset()}
+     */
+    public int getFloorSurfaceY() {
+        return config.getMinY() + getFloorOffset();
+    }
+
+    /**
      * Lays the floor slab and ceiling slab across the entire chunk column for this level.
      *
      * @param chunkData the mutable chunk data
@@ -158,13 +168,34 @@ public abstract class BackroomsLevel {
      */
     protected RoomLayout calculateRoomLayout(int chunkStartX, int chunkStartZ,
                                              int chunkEndX, int chunkEndZ) {
+        return calculateRoomLayout(chunkStartX, chunkStartZ, chunkEndX, chunkEndZ, 0);
+    }
+
+    /**
+     * Calculates the room layout for this chunk on a specific floor of a multi-floor level.
+     *
+     * <p>The floor index is mixed into the room seed so stacked floors of the same level
+     * get independent room layouts (otherwise every floor would have perfectly aligned
+     * walls). The result stays deterministic: chunks within the same grid cell on the same
+     * floor always compute the identical room.</p>
+     *
+     * @param chunkStartX world X of the chunk's western edge
+     * @param chunkStartZ world Z of the chunk's northern edge
+     * @param chunkEndX   world X just past the chunk's eastern edge
+     * @param chunkEndZ   world Z just past the chunk's southern edge
+     * @param floorIndex  the floor being generated (0 = bottom); single-floor levels pass 0
+     * @return a {@link RoomLayout} describing the room and its relationship to this chunk
+     */
+    protected RoomLayout calculateRoomLayout(int chunkStartX, int chunkStartZ,
+                                             int chunkEndX, int chunkEndZ, int floorIndex) {
         int roomMaxWidth = config.getRoomMaxWidth();
         int roomMaxLength = config.getRoomMaxLength();
 
         int gridX = Math.floorDiv(chunkStartX, roomMaxWidth);
         int gridZ = Math.floorDiv(chunkStartZ, roomMaxLength);
 
-        long roomSeed = seed ^ ((long) gridX * 0x4f4f4f4fL) ^ ((long) gridZ * 0x2f2f2f2fL) ^ config.getIdHashCode();
+        long roomSeed = seed ^ ((long) gridX * 0x4f4f4f4fL) ^ ((long) gridZ * 0x2f2f2f2fL)
+                      ^ config.getIdHashCode() ^ (floorIndex * 0x5f356495L);
         Random roomRand = new Random(roomSeed);
 
         int roomWidth = config.getRoomMinWidth() + roomRand.nextInt(roomMaxWidth - config.getRoomMinWidth() + 1);
@@ -320,8 +351,11 @@ public abstract class BackroomsLevel {
             return;
         }
 
+        // floorY is mixed in so multi-floor levels don't place chests at the
+        // same relative position on every floor.
         Random chunkRand = new Random(
-                (long) chunkStartX * 341873128712L + (long) chunkStartZ * 132897987541L ^ seed ^ config.getIdHashCode()
+                (long) chunkStartX * 341873128712L + (long) chunkStartZ * 132897987541L
+                ^ seed ^ config.getIdHashCode() ^ (floorY * 0x2545f491L)
         );
 
         if (chunkRand.nextInt(1000) < 4) {

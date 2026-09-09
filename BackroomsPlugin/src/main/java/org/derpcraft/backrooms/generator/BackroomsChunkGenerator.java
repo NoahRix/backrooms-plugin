@@ -20,18 +20,20 @@ import java.util.Random;
  * Chunk generator for the Backrooms world.
  *
  * <p>This generator delegates the actual block placement to a list of {@link BackroomsLevel}
- * instances, one for each enabled level in the configuration. Each level occupies a vertical
- * slice of the world and generates its own rooms, walls, lighting, and special features.</p>
+ * instances, one for each enabled level in the configuration. The world is arranged as
+ * concentric "ripple" rings around spawn: each chunk belongs to exactly one level, chosen
+ * by the chunk centre's distance from the world origin, and that level fills its configured
+ * Y range for the whole chunk.</p>
  *
  * <h2>Generation flow</h2>
  * <ol>
- *   <li>For each enabled level, check if its Y range overlaps the world bounds</li>
+ *   <li>Determine which level's ring contains this chunk ({@link BackroomsConfig#getLevelForChunk})</li>
  *   <li>Call {@link BackroomsLevel#generate} to produce all blocks for that level</li>
  *   <li>Place a bedrock layer at the world's minimum Y</li>
  * </ol>
  *
  * <p>The generator also provides a safe spawn location that places players 2 blocks
- * above the floor of the topmost level, preventing them from spawning inside blocks.</p>
+ * above the floor of the innermost level, preventing them from spawning inside blocks.</p>
  *
  * @see BackroomsLevel
  * @see BackroomsConfig
@@ -55,11 +57,14 @@ public class BackroomsChunkGenerator extends ChunkGenerator {
     }
 
     /**
-     * Generates the noise (base blocks) for a chunk by delegating to each enabled level.
+     * Generates the noise (base blocks) for a chunk by delegating to the level whose
+     * ring contains this chunk.
      *
-     * <p>Each level generates its own floor, ceiling, rooms, walls, lighting, and special
-     * features within its configured Y range. Levels that fall outside the world's vertical
-     * bounds are skipped.</p>
+     * <p>The world is arranged as concentric "ripple" rings around spawn: the level
+     * generating in a chunk is chosen by the chunk centre's distance from the world
+     * origin (see {@link BackroomsConfig#getLevelForChunk}). The chosen level then
+     * fills its configured Y range with floors, rooms, walls, lighting, and special
+     * features. Chunks outside every ring stay empty (bedrock only).</p>
      *
      * @param worldInfo information about the world being generated
      * @param random    the world-specific random (not used; levels use seeded randomness)
@@ -79,14 +84,12 @@ public class BackroomsChunkGenerator extends ChunkGenerator {
         int chunkEndX = chunkStartX + 16;
         int chunkEndZ = chunkStartZ + 16;
 
-        for (BackroomsLevel level : config.getEnabledLevelInstances()) {
-            LevelConfig lc = level.getConfig();
-
-            if (lc.getMaxY() <= worldMinY || lc.getMinY() >= worldMaxY) {
-                continue;
+        LevelConfig ring = config.getLevelForChunk(chunkX, chunkZ);
+        if (ring != null && ring.isEnabled()) {
+            BackroomsLevel level = config.getLevelInstanceById(ring.getId());
+            if (level != null) {
+                level.generate(chunkData, chunkStartX, chunkStartZ, chunkEndX, chunkEndZ, worldMinY, worldMaxY);
             }
-
-            level.generate(chunkData, chunkStartX, chunkStartZ, chunkEndX, chunkEndZ, worldMinY, worldMaxY);
         }
 
         for (int localX = 0; localX < 16; localX++) {
@@ -201,33 +204,25 @@ public class BackroomsChunkGenerator extends ChunkGenerator {
     /**
      * Returns a safe spawn location for players entering the Backrooms world.
      *
-     * <p>The spawn point is placed on the first floor of Level 0, with the player's
-     * feet standing directly on the floor surface. The X and Z coordinates are fixed
-     * at (8.5, 8.5) to place the player in the centre of the spawn chunk.</p>
+     * <p>The spawn point sits in the centre chunk (0,0), which always belongs to the
+     * innermost ring (Level 0). The player's feet are placed one block above that
+     * level's floor surface, at the centre of the spawn chunk (8.5, 8.5).</p>
      *
      * @param world  the Backrooms world
      * @param random the world-specific random
-     * @return a safe spawn location on the first floor
+     * @return a safe spawn location on the innermost level's floor
      */
     @Override
     public @NotNull Location getFixedSpawnLocation(@NotNull World world, @NotNull Random random) {
-        List<BackroomsLevel> enabledLevels = config.getEnabledLevelInstances();
         int spawnY = world.getMinHeight() + 4;
 
-        if (!enabledLevels.isEmpty()) {
-            BackroomsLevel firstLevel = enabledLevels.get(0);
-            
-            // Check if this is Level 0 with multiple floors
-            if (firstLevel instanceof org.derpcraft.backrooms.generator.levels.Level0Lobby) {
-                // Calculate the first (bottom) floor of Level 0
-                int floorOffset = 2; // Level 0's floor offset
-                int floorY = firstLevel.getConfig().getMinY() + floorOffset;
-                spawnY = floorY + 1; // Player's feet on the floor surface
-            } else {
-                // Single floor level
-                int floorY = firstLevel.getConfig().getMinY() + 2;
-                spawnY = floorY + 1; // Player's feet on the floor surface
-            }
+        LevelConfig centreConfig = config.getLevelForChunk(0, 0);
+        BackroomsLevel centreLevel = centreConfig != null
+                ? config.getLevelInstanceById(centreConfig.getId()) : null;
+
+        if (centreLevel != null) {
+            // Floor surface = minY + floor offset (1); feet one block above it.
+            spawnY = centreLevel.getConfig().getMinY() + 2;
         }
 
         return new Location(world, 8.5, spawnY, 8.5);

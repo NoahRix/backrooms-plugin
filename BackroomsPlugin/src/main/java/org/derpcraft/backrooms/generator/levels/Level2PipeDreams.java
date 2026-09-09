@@ -69,12 +69,14 @@ public class Level2PipeDreams extends BackroomsLevel {
     /**
      * {@inheritDoc}
      *
-     * <p>Pipe Dreams has a deeper 3-block sub-floor to accommodate the underground
-     * pipe networks that give this level its name.</p>
+     * <p>Pipe Dreams uses a 1-block sub-floor so its walking surface aligns with the
+     * other levels — with the ripple layout, adjacent rings must share the same floor
+     * height for seamless transitions. Decorative pipe networks run along walls and
+     * ceilings instead of a sub-floor gap.</p>
      */
     @Override
     protected int getFloorOffset() {
-        return 3;
+        return 1;
     }
 
     /**

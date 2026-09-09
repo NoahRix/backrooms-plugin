@@ -52,6 +52,19 @@ public class LevelConfig {
     private int maxY;
 
     /**
+     * Inner radius of this level's ring around the world spawn, in blocks (inclusive).
+     * The level generates in every chunk whose centre lies at least this far from spawn.
+     */
+    private int minRadius;
+
+    /**
+     * Outer radius of this level's ring around the world spawn, in blocks (exclusive).
+     * A negative value means the ring extends to infinity (the level fills everything
+     * beyond {@link #minRadius}).
+     */
+    private int maxRadius;
+
+    /**
      * Height of the air space between the floor slab and ceiling slab, in blocks.
      * This determines how tall the rooms feel.
      */
@@ -136,6 +149,18 @@ public class LevelConfig {
 
     /** Sets the maximum Y coordinate (exclusive). */
     public void setMaxY(int maxY) { this.maxY = maxY; }
+
+    /** Returns the inner ring radius in blocks (inclusive, measured from world spawn). */
+    public int getMinRadius() { return minRadius; }
+
+    /** Sets the inner ring radius in blocks (inclusive, measured from world spawn). */
+    public void setMinRadius(int minRadius) { this.minRadius = minRadius; }
+
+    /** Returns the outer ring radius in blocks (exclusive), or a negative value for unlimited. */
+    public int getMaxRadius() { return maxRadius; }
+
+    /** Sets the outer ring radius in blocks (exclusive); a negative value means unlimited. */
+    public void setMaxRadius(int maxRadius) { this.maxRadius = maxRadius; }
 
     /** Returns the ceiling height in blocks. */
     public int getCeilingHeight() { return ceilingHeight; }
