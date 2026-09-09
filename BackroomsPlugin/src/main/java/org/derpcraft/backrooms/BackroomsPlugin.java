@@ -9,6 +9,7 @@ import org.derpcraft.backrooms.integration.multiworld.MultiWorldHook;
 import org.derpcraft.backrooms.listeners.PlayerListener;
 import org.derpcraft.backrooms.listeners.WorldListener;
 import org.derpcraft.backrooms.listeners.LightBreakListener;
+import org.derpcraft.backrooms.listeners.RailsListener;
 import org.derpcraft.backrooms.effects.FlickerManager;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.PluginManager;
@@ -110,6 +111,7 @@ public class BackroomsPlugin extends JavaPlugin {
         pm.registerEvents(new PlayerListener(this), this);
         pm.registerEvents(new WorldListener(this), this);
         pm.registerEvents(new LightBreakListener(this), this);
+        pm.registerEvents(new RailsListener(this), this);
 
         getLogger().info("BackroomsGen v" + getDescription().getVersion() + " enabled");
     }

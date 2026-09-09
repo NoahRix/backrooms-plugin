@@ -67,7 +67,7 @@ levels:
     enabled: true
     name: "Level 2 - Pipe Dreams"
     min-radius: 1200
-    max-radius: -1
+    max-radius: 2000
     min-y: -64
     max-y: 0
     ceiling-height: 5
@@ -84,6 +84,31 @@ levels:
       spacing: 6
     corridor-width: 2
     special-room-chance: 0.10
+  level3:
+    enabled: true
+    name: "Level 3 - The Rails"
+    min-radius: 2000
+    max-radius: -1
+    min-y: -64
+    max-y: 0
+    ceiling-height: 6
+    room:
+      min-width: 12
+      max-width: 32
+      min-length: 12
+      max-length: 32
+      wall-material: CRACKED_DEEPSLATE_TILES
+      floor-material: COBBLED_DEEPSLATE
+      ceiling-material: SMOOTH_BASALT
+    lighting:
+      material: REDSTONE_TORCH
+      spacing: 7
+    corridor-width: 3
+    special-room-chance: 0.05
+    # Rail-specific settings (Level 3)
+    broken-track-chance: 0.0     # rail gaps; 0 = tracks always intact
+    cobweb-chance: 0.02          # cobwebs beside rails (never on them)
+    ghost-cart-chance: 0.35      # chance a rail chunk spawns a roaming minecart
 
 gameplay:
   mob-spawning: true

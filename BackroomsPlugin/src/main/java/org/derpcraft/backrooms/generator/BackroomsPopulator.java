@@ -4,6 +4,7 @@ import org.derpcraft.backrooms.config.BackroomsConfig;
 import org.derpcraft.backrooms.config.LevelConfig;
 import org.derpcraft.backrooms.generator.levels.BackroomsLevel;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.LimitedRegion;
 import org.bukkit.generator.WorldInfo;
@@ -66,6 +67,12 @@ public class BackroomsPopulator extends BlockPopulator {
         long seed = config.getGenerationSeed() != 0 ? config.getGenerationSeed() : worldInfo.getSeed();
         Random seededRandom = new Random(seed ^ ((long) chunkX * 341873128712L + (long) chunkZ * 132897987541L));
 
+        // Level 3: fill in station sign text and ghost-supply chests.
+        if ("level3".equals(level.getId())) {
+            decorateRails(limitedRegion, chunkX, chunkZ, instance, seededRandom);
+            return;
+        }
+
         int floorSurfaceY = instance.getFloorSurfaceY();
 
         for (int x = 0; x < 16; x++) {
@@ -84,6 +91,62 @@ public class BackroomsPopulator extends BlockPopulator {
 
                 if (config.isHazards() && seededRandom.nextDouble() < 0.003) {
                     placeHazard(limitedRegion, globalX, floorSurfaceY + 1, globalZ, seededRandom, level);
+                }
+            }
+        }
+    }
+
+    /** Cryptic messages the abandoned stations announce. */
+    private static final String[] STATION_MESSAGES = {
+            "DO NOT BOARD",
+            "THE NEXT STOP IS YOURS",
+            "WE ARE STILL WAITING",
+            "SERVICE DISCONTINUED",
+            "THE TUNNEL REMEMBERS",
+            "MIND THE GAP",
+            "NO EXIT",
+            "LAST STOP. PROMISE.",
+            "THE CARS COME BACK EMPTY",
+            "TICKETS ARE MEMORIES",
+    };
+
+    /**
+     * Decorates a Level 3 rail chunk: writes cryptic text onto the station sign
+     * posts and fills station chests with the previous crew's supplies.
+     */
+    private void decorateRails(@NotNull LimitedRegion region, int chunkX, int chunkZ,
+                               @NotNull BackroomsLevel level, @NotNull Random random) {
+        int floorSurfaceY = level.getFloorSurfaceY();
+
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                int globalX = chunkX * 16 + x;
+                int globalZ = chunkZ * 16 + z;
+                if (!region.isInRegion(globalX, floorSurfaceY + 1, globalZ)) continue;
+
+                Material type = region.getType(globalX, floorSurfaceY + 1, globalZ);
+                if (type == Material.OAK_SIGN) {
+                    org.bukkit.block.BlockState state = region.getBlockState(globalX, floorSurfaceY + 1, globalZ);
+                    if (state instanceof org.bukkit.block.Sign sign) {
+                        sign.setLine(1, STATION_MESSAGES[random.nextInt(STATION_MESSAGES.length)]);
+                        sign.update();
+                    }
+                } else if (type == Material.CHEST) {
+                    org.bukkit.block.BlockState state = region.getBlockState(globalX, floorSurfaceY + 1, globalZ);
+                    if (state instanceof org.bukkit.block.Chest chest) {
+                        ItemStack[] supplies = {
+                                new ItemStack(Material.RAIL, 4 + random.nextInt(10)),
+                                new ItemStack(Material.POWERED_RAIL, 2 + random.nextInt(6)),
+                                new ItemStack(Material.REDSTONE_TORCH, 2 + random.nextInt(6)),
+                                new ItemStack(Material.REDSTONE, 1 + random.nextInt(8)),
+                                new ItemStack(Material.COAL, 3 + random.nextInt(8)),
+                                new ItemStack(Material.BOOK, 1 + random.nextInt(2)),
+                        };
+                        for (ItemStack item : supplies) {
+                            if (random.nextDouble() < 0.6) chest.getInventory().addItem(item);
+                        }
+                        chest.update();
+                    }
                 }
             }
         }

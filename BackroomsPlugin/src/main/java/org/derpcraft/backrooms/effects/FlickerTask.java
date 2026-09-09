@@ -1,7 +1,6 @@
 package org.derpcraft.backrooms.effects;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
@@ -34,13 +33,10 @@ public class FlickerTask extends BukkitRunnable {
     /** The player receiving the flicker effect. */
     private final Player player;
 
-    /** The dimmer block to use during flicker. */
-    private final Material dimmerBlock = Material.GRAY_CONCRETE;
-
-    /** Maximum distance (in blocks) to search for flickering lanterns. */
+    /** Maximum distance (in blocks) to search for flickering lights. */
     private static final int RANGE = 48;
 
-    /** Maximum number of lanterns to flicker per tick. */
+    /** Maximum number of lights to flicker per tick. */
     private static final int MAX_PER_TICK = 3;
 
     /** Probability of playing a sound when a lantern flickers (0.0-1.0). */
@@ -79,8 +75,8 @@ public class FlickerTask extends BukkitRunnable {
         // Restore any completed flickers
         restoreCompletedFlickers();
 
-        // Find nearby flickering lanterns
-        List<Location> nearby = findNearbyFlickeringLanterns();
+        // Find nearby flickering lights
+        List<FlickerManager.FlickerEntry> nearby = findNearbyFlickeringLanterns();
         if (nearby.isEmpty()) {
             return;
         }
@@ -90,28 +86,29 @@ public class FlickerTask extends BukkitRunnable {
         int count = Math.min(MAX_PER_TICK, nearby.size());
 
         for (int i = 0; i < count; i++) {
-            Location loc = nearby.get(i);
+            FlickerManager.FlickerEntry entry = nearby.get(i);
 
             // Skip if already flickering
-            if (activeFlickers.containsKey(loc)) {
+            if (activeFlickers.containsKey(entry.location())) {
                 continue;
             }
 
             // Start flicker
-            startFlicker(loc);
+            startFlicker(entry);
         }
     }
 
     /**
-     * Finds all flickering lanterns within range of the player.
+     * Finds all flickering lights within range of the player.
      *
-     * @return list of nearby flickering locations
+     * @return list of nearby flicker entries
      */
-    private List<Location> findNearbyFlickeringLanterns() {
-        List<Location> nearby = new ArrayList<>();
+    private List<FlickerManager.FlickerEntry> findNearbyFlickeringLanterns() {
+        List<FlickerManager.FlickerEntry> nearby = new ArrayList<>();
         Location playerLoc = player.getLocation();
 
-        for (Location loc : manager.getFlickeringLanterns()) {
+        for (FlickerManager.FlickerEntry entry : manager.getFlickeringEntries()) {
+            Location loc = entry.location();
             if (loc.getWorld() != player.getWorld()) {
                 continue;
             }
@@ -121,14 +118,14 @@ public class FlickerTask extends BukkitRunnable {
                 continue;
             }
 
-            // Verify the block is still a sea lantern (hasn't been broken)
-            if (loc.getBlock().getType() != Material.SEA_LANTERN) {
+            // Verify the block is still the expected light (hasn't been broken)
+            if (loc.getBlock().getType() != entry.onMaterial()) {
                 continue;
             }
 
             double distance = loc.distanceSquared(playerLoc);
             if (distance <= RANGE * RANGE) {
-                nearby.add(loc);
+                nearby.add(entry);
             }
         }
 
@@ -136,21 +133,23 @@ public class FlickerTask extends BukkitRunnable {
     }
 
     /**
-     * Starts a flicker effect at the given location.
+     * Starts a flicker effect at the given entry's location.
      *
-     * <p>Sends a block change packet to make the lantern appear dimmer, then
+     * <p>Sends a block change packet to swap in the entry's off material, then
      * schedules restoration after a random duration.</p>
      *
-     * @param loc the lantern location
+     * @param entry the flicker entry
      */
-    private void startFlicker(Location loc) {
+    private void startFlicker(FlickerManager.FlickerEntry entry) {
+        Location loc = entry.location();
+
         // Check if the chunk is loaded before accessing the block
         if (!loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4, loc.getBlockZ() >> 4)) {
             return; // Chunk not loaded, skip
         }
 
-        // Verify the block is still a light source (sea lantern)
-        if (loc.getBlock().getType() != Material.SEA_LANTERN) {
+        // Verify the block is still the expected light source
+        if (loc.getBlock().getType() != entry.onMaterial()) {
             return; // Block has been broken or changed, skip it
         }
 
@@ -158,8 +157,8 @@ public class FlickerTask extends BukkitRunnable {
         BlockData original = loc.getBlock().getBlockData();
         activeFlickers.put(loc, original);
 
-        // Send dimmer block change
-        player.sendBlockChange(loc, dimmerBlock.createBlockData());
+        // Send off-material block change
+        player.sendBlockChange(loc, entry.offMaterial().createBlockData());
 
         // Play flicker sound
         if (random.nextDouble() < SOUND_CHANCE) {

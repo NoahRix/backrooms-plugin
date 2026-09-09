@@ -12,7 +12,6 @@ import org.bukkit.generator.WorldInfo;
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -115,15 +114,15 @@ public class BackroomsChunkGenerator extends ChunkGenerator {
     /**
      * Returns the list of block populators for this generator.
      *
-     * <p>Currently returns an empty list; all population is handled during the noise
-     * generation phase by the level classes.</p>
+     * <p>The populator fills in station sign text and loot on Level 3, and
+     * places ambient loot/hazards in the other levels' rooms.</p>
      *
      * @param world the world being generated
-     * @return an empty list
+     * @return the Backrooms block populator
      */
     @Override
     public @NotNull List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
-        return Collections.emptyList();
+        return List.of(new BackroomsPopulator(config));
     }
 
     /** {@inheritDoc} */

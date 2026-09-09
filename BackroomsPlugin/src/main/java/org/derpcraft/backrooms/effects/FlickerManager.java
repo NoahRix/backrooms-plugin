@@ -1,9 +1,11 @@
 package org.derpcraft.backrooms.effects;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -31,11 +33,22 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FlickerManager {
 
+    /**
+     * A registered flickering light: where it is, what it looks like when lit,
+     * and what it briefly turns into while flickering.
+     *
+     * @param location   the light's location
+     * @param onMaterial the block material while lit
+     * @param offMaterial the block material shown during a flicker (packet-only)
+     */
+    public record FlickerEntry(Location location, Material onMaterial, Material offMaterial) {
+    }
+
     /** The plugin instance. */
     private final JavaPlugin plugin;
 
-    /** Set of all locations that should flicker (populated during world generation). */
-    private final Set<Location> flickeringLanterns = ConcurrentHashMap.newKeySet();
+    /** Map of flickering light locations to their on/off materials (populated during world generation). */
+    private final Map<Location, FlickerEntry> flickeringLights = new ConcurrentHashMap<>();
 
     /** Map of player UUID to their active flicker task. */
     private final Map<UUID, FlickerTask> playerTasks = new ConcurrentHashMap<>();
@@ -53,28 +66,44 @@ public class FlickerManager {
     }
 
     /**
-     * Marks a lantern location as flickering.
+     * Marks a sea lantern location as flickering.
      *
      * <p>Called during world generation to register which sea lanterns should
-     * have the flicker effect. The location is stored in a concurrent set for
+     * have the flicker effect. The location is stored in a concurrent map for
      * thread-safe access from generation threads.</p>
      *
      * @param location the lantern location to mark
      */
     public void markFlickering(Location location) {
-        flickeringLanterns.add(location);
+        markFlickering(location, Material.SEA_LANTERN, Material.GRAY_CONCRETE);
     }
 
     /**
-     * Removes a lantern location from the flickering set.
+     * Marks a light location as flickering with explicit on/off materials.
+     *
+     * <p>Used for level-specific lights: e.g. Level 3 registers redstone torches
+     * that briefly "die" (swap to air) during a flicker. Only decorative lights
+     * may be registered here &mdash; anything powering redstone circuitry must
+     * never flicker.</p>
+     *
+     * @param location    the light location to mark
+     * @param onMaterial  the block material while lit
+     * @param offMaterial the block material shown during a flicker
+     */
+    public void markFlickering(Location location, Material onMaterial, Material offMaterial) {
+        flickeringLights.put(location, new FlickerEntry(location, onMaterial, offMaterial));
+    }
+
+    /**
+     * Removes a light location from the flickering set.
      *
      * <p>Called when a flickering light is broken by a player. This ensures
      * the flicker effect stops being applied to the broken location.</p>
      *
-     * @param location the lantern location to remove
+     * @param location the light location to remove
      */
     public void removeFlickering(Location location) {
-        flickeringLanterns.remove(location);
+        flickeringLights.remove(location);
     }
 
     /**
@@ -84,16 +113,25 @@ public class FlickerManager {
      * @return true if the location should flicker
      */
     public boolean isFlickering(Location location) {
-        return flickeringLanterns.contains(location);
+        return flickeringLights.containsKey(location);
     }
 
     /**
-     * Returns all flickering lantern locations.
+     * Returns all flickering light locations.
      *
      * @return unmodifiable view of flickering locations
      */
     public Set<Location> getFlickeringLanterns() {
-        return Set.copyOf(flickeringLanterns);
+        return Set.copyOf(flickeringLights.keySet());
+    }
+
+    /**
+     * Returns all registered flicker entries (location + on/off materials).
+     *
+     * @return collection of flicker entries
+     */
+    public Collection<FlickerEntry> getFlickeringEntries() {
+        return flickeringLights.values();
     }
 
     /**

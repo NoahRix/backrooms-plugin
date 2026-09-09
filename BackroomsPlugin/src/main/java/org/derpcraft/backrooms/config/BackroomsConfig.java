@@ -5,6 +5,7 @@ import org.derpcraft.backrooms.generator.levels.GenericBackroomsLevel;
 import org.derpcraft.backrooms.generator.levels.Level0Lobby;
 import org.derpcraft.backrooms.generator.levels.Level1HabitableZone;
 import org.derpcraft.backrooms.generator.levels.Level2PipeDreams;
+import org.derpcraft.backrooms.generator.levels.Level3TheRails;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -192,6 +193,9 @@ public class BackroomsConfig {
 
                 lc.setCorridorWidth(ls.getInt("corridor-width", 2));
                 lc.setSpecialRoomChance(ls.getDouble("special-room-chance", 0.05));
+                lc.setBrokenTrackChance(ls.getDouble("broken-track-chance", 0.0));
+                lc.setCobwebChance(ls.getDouble("cobweb-chance", 0.02));
+                lc.setGhostCartChance(ls.getDouble("ghost-cart-chance", 0.3));
 
                 levels.put(key, lc);
             }
@@ -270,6 +274,7 @@ public class BackroomsConfig {
      *   <li>{@code level0} &rarr; {@link Level0Lobby}</li>
      *   <li>{@code level1} &rarr; {@link Level1HabitableZone}</li>
      *   <li>{@code level2} &rarr; {@link Level2PipeDreams}</li>
+     *   <li>{@code level3} &rarr; {@link Level3TheRails}</li>
      * </ul>
      *
      * <p>Unknown level IDs fall back to {@link GenericBackroomsLevel} so new levels can
@@ -323,6 +328,7 @@ public class BackroomsConfig {
             case "level0" -> new Level0Lobby(lc, seed);
             case "level1" -> new Level1HabitableZone(lc, seed);
             case "level2" -> new Level2PipeDreams(lc, seed);
+            case "level3" -> new Level3TheRails(lc, seed);
             default -> new GenericBackroomsLevel(lc, seed);
         };
     }

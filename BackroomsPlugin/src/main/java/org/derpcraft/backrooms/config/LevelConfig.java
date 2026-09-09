@@ -109,6 +109,24 @@ public class LevelConfig {
      */
     private double specialRoomChance;
 
+    /**
+     * Probability (0.0&ndash;1.0) that a rail cell is left empty (broken track).
+     * Only used by rail-based levels; 0 disables broken track entirely.
+     */
+    private double brokenTrackChance;
+
+    /**
+     * Probability (0.0&ndash;1.0) that a cobweb is placed adjacent to a rail.
+     * Cobwebs never occupy a rail cell or the column above it.
+     */
+    private double cobwebChance;
+
+    /**
+     * Probability (0.0&ndash;1.0) that a rail chunk spawns ghost minecarts
+     * (empty carts that roam the powered network on their own).
+     */
+    private double ghostCartChance;
+
     // -------------------------------------------------------------------------
     // Getters and setters
     // -------------------------------------------------------------------------
@@ -231,8 +249,26 @@ public class LevelConfig {
     /** Returns the special room probability (0.0&ndash;1.0). */
     public double getSpecialRoomChance() { return specialRoomChance; }
 
-    /** Sets the special room probability. */
+    /** Sets the special room probability (0.0&ndash;1.0). */
     public void setSpecialRoomChance(double specialRoomChance) { this.specialRoomChance = specialRoomChance; }
+
+    /** Returns the broken-track probability (0 disables broken track). */
+    public double getBrokenTrackChance() { return brokenTrackChance; }
+
+    /** Sets the broken-track probability (0 disables broken track). */
+    public void setBrokenTrackChance(double brokenTrackChance) { this.brokenTrackChance = brokenTrackChance; }
+
+    /** Returns the rail-adjacent cobweb probability. */
+    public double getCobwebChance() { return cobwebChance; }
+
+    /** Sets the rail-adjacent cobweb probability. */
+    public void setCobwebChance(double cobwebChance) { this.cobwebChance = cobwebChance; }
+
+    /** Returns the ghost minecart spawn probability per rail chunk. */
+    public double getGhostCartChance() { return ghostCartChance; }
+
+    /** Sets the ghost minecart spawn probability per rail chunk. */
+    public void setGhostCartChance(double ghostCartChance) { this.ghostCartChance = ghostCartChance; }
 
     /**
      * Returns the total height of this level's vertical slice in blocks.
