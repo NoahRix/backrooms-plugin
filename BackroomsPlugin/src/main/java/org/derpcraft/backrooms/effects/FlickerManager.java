@@ -66,6 +66,18 @@ public class FlickerManager {
     }
 
     /**
+     * Removes a lantern location from the flickering set.
+     *
+     * <p>Called when a flickering light is broken by a player. This ensures
+     * the flicker effect stops being applied to the broken location.</p>
+     *
+     * @param location the lantern location to remove
+     */
+    public void removeFlickering(Location location) {
+        flickeringLanterns.remove(location);
+    }
+
+    /**
      * Returns whether a location is marked as flickering.
      *
      * @param location the location to check
