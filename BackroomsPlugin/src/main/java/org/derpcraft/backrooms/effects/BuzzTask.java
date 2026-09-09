@@ -10,15 +10,9 @@ import java.util.Set;
 /**
  * Per-player task that plays a proximity-based fluorescent light buzzing sound.
  * 
- * <p>This task runs on a repeating schedule and finds the nearest flickering light source.
- * The sound is played from the light's location, allowing Minecraft's built-in distance
- * attenuation to dynamically adjust the volume as the player moves closer or further away.</p>
- * 
- * <p>By playing from the light's location (not the player's location), the volume changes
- * naturally and continuously as the player moves, creating a realistic proximity-based
- * audio effect without needing to manually calculate volume.</p>
- * 
- * <p>The effect is purely auditory - no visual changes are made.</p>
+ * <p>This task periodically plays the buzz sound from the nearest flickering light's location.
+ * Minecraft's built-in distance attenuation handles the volume based on the player's distance
+ * from the sound source, creating a realistic proximity-based audio effect.</p>
  * 
  * @see FlickerManager
  */
@@ -30,17 +24,14 @@ public class BuzzTask extends BukkitRunnable {
     /** The player receiving the buzz effect. */
     private final Player player;
 
-    /** Maximum distance (in blocks) at which the buzz can be heard. */
-    private static final double MAX_DISTANCE = 15.0;
-
-    /** Volume at the sound source (Minecraft will attenuate based on distance). */
-    private static final float SOURCE_VOLUME = 0.5f;
+    /** Volume for the buzz sound at the source. */
+    private static final float BUZZ_VOLUME = 0.5f;
 
     /** Pitch for the buzz sound (1.0 = normal). */
     private static final float BUZZ_PITCH = 1.0f;
 
-    /** Ticks between each buzz sound play (100 ticks = 5 seconds). */
-    private static final long BUZZ_INTERVAL = 100L; // Play every 5 seconds to avoid overlap
+    /** Ticks between each buzz sound play (300 ticks = 15 seconds). */
+    private static final long BUZZ_INTERVAL = 300L;
 
     /**
      * Constructs a new buzz task for a player.
@@ -67,19 +58,17 @@ public class BuzzTask extends BukkitRunnable {
             return;
         }
 
-        // Get all flickering lantern locations
+        // Find the nearest flickering lantern to play the sound from
         Set<Location> flickeringLanterns = manager.getFlickeringLanterns();
         if (flickeringLanterns.isEmpty()) {
             return;
         }
 
-        // Find the nearest flickering lantern
         Location playerLoc = player.getLocation();
         Location nearestLight = null;
         double nearestDistance = Double.MAX_VALUE;
 
         for (Location lightLoc : flickeringLanterns) {
-            // Only check lights in the same world
             if (lightLoc.getWorld() != player.getWorld()) {
                 continue;
             }
@@ -91,18 +80,15 @@ public class BuzzTask extends BukkitRunnable {
             }
         }
 
-        // If no light found or too far away, don't play sound
-        if (nearestLight == null || nearestDistance > MAX_DISTANCE) {
-            return;
+        // Play the sound from the nearest light's location
+        // Minecraft will attenuate the volume based on player distance
+        if (nearestLight != null) {
+            player.playSound(nearestLight, "backrooms.fluorescent_buzz", BUZZ_VOLUME, BUZZ_PITCH);
         }
-
-        // Play the buzz sound from the light's location
-        // Minecraft will automatically attenuate the volume based on player distance
-        player.playSound(nearestLight, "backrooms.fluorescent_buzz", SOURCE_VOLUME, BUZZ_PITCH);
     }
 
     /**
-     * Starts the buzz task with the configured interval.
+     * Starts the buzz task.
      */
     public void start() {
         runTaskTimer(manager.getPlugin(), 0L, BUZZ_INTERVAL);
