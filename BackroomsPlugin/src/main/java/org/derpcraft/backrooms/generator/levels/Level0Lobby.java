@@ -47,7 +47,7 @@ public class Level0Lobby extends BackroomsLevel {
 
     /**
      * Number of floors to generate in Level 0.
-     * Each floor is 7 blocks tall (2 offset + 4 ceiling height + 1 ceiling block).
+     * Each floor's walking surface is placed directly above the previous floor's ceiling.
      */
     private static final int NUM_FLOORS = 4;
 
@@ -89,8 +89,8 @@ public class Level0Lobby extends BackroomsLevel {
         int effectiveMinY = Math.max(config.getMinY(), worldMinY);
         int effectiveMaxY = Math.min(config.getMaxY(), worldMaxY);
 
-        // Calculate floor height: floor offset + ceiling height + 1 (for the ceiling block itself)
-        int floorHeight = getFloorOffset() + config.getCeilingHeight() + 1;
+        // Calculate floor height: ceiling height + 1 (for the ceiling block itself)
+        int floorHeight = config.getCeilingHeight() + 1;
 
         // Generate each floor
         for (int floorIndex = 0; floorIndex < NUM_FLOORS; floorIndex++) {
@@ -168,7 +168,7 @@ public class Level0Lobby extends BackroomsLevel {
         }
 
         // Create a 3x3 stairwell shaft
-        int floorHeight = getFloorOffset() + config.getCeilingHeight() + 1;
+        int floorHeight = config.getCeilingHeight() + 1;
         int nextFloorY = floorY + floorHeight;
 
         for (int dx = -1; dx <= 1; dx++) {
