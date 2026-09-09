@@ -40,6 +40,9 @@ public class FlickerManager {
     /** Map of player UUID to their active flicker task. */
     private final Map<UUID, FlickerTask> playerTasks = new ConcurrentHashMap<>();
 
+    /** Map of player UUID to their active buzz task. */
+    private final Map<UUID, BuzzTask> buzzTasks = new ConcurrentHashMap<>();
+
     /**
      * Constructs a new flicker manager.
      *
@@ -86,7 +89,8 @@ public class FlickerManager {
      *
      * <p>Creates and schedules a new {@link FlickerTask} for the player that
      * will periodically send block change packets to make nearby flickering
-     * lanterns appear to flicker.</p>
+     * lanterns appear to flicker. Also starts a {@link BuzzTask} to play
+     * continuous ambient buzzing.</p>
      *
      * @param player the player to start flickering for
      */
@@ -98,13 +102,17 @@ public class FlickerManager {
         FlickerTask task = new FlickerTask(this, player);
         playerTasks.put(player.getUniqueId(), task);
         task.runTaskTimer(plugin, 0L, 3L); // Every 3 ticks
+
+        BuzzTask buzzTask = new BuzzTask(this, player);
+        buzzTasks.put(player.getUniqueId(), buzzTask);
+        buzzTask.start();
     }
 
     /**
      * Stops the flicker effect for a player.
      *
-     * <p>Cancels the player's {@link FlickerTask} and restores any blocks
-     * that were mid-flicker to their original state.</p>
+     * <p>Cancels the player's {@link FlickerTask} and {@link BuzzTask}, and restores
+     * any blocks that were mid-flicker to their original state.</p>
      *
      * @param player the player to stop flickering for
      */
@@ -114,10 +122,15 @@ public class FlickerManager {
             task.cancel();
             task.restoreAll();
         }
+
+        BuzzTask buzzTask = buzzTasks.remove(player.getUniqueId());
+        if (buzzTask != null) {
+            buzzTask.cancel();
+        }
     }
 
     /**
-     * Stops all flicker tasks.
+     * Stops all flicker and buzz tasks.
      *
      * <p>Called during plugin shutdown to clean up all active tasks.</p>
      */
@@ -127,6 +140,11 @@ public class FlickerManager {
             task.restoreAll();
         }
         playerTasks.clear();
+
+        for (BuzzTask task : buzzTasks.values()) {
+            task.cancel();
+        }
+        buzzTasks.clear();
     }
 
     /**

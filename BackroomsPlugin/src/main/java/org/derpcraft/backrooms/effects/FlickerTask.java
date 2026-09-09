@@ -143,7 +143,7 @@ public class FlickerTask extends BukkitRunnable {
 
         // Play flicker sound
         if (random.nextDouble() < SOUND_CHANCE) {
-            player.playSound(loc, Sound.BLOCK_REDSTONE_TORCH_BURNOUT, FLICKER_VOLUME, 1.0f);
+            player.playSound(loc, "backrooms.fluorescent_buzz", FLICKER_VOLUME, 1.0f);
         }
 
         // Schedule restoration (1-4 ticks)
