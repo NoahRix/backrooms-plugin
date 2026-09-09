@@ -1,6 +1,6 @@
-name: BackroomsGen
+name: LiminalGen
 version: '1.0.0'
-main: org.derpcraft.backrooms.BackroomsPlugin
+main: org.derpcraft.liminal.LiminalPlugin
 api-version: '1.21'
 load: STARTUP
 softdepend:
@@ -10,19 +10,19 @@ softdepend:
   - WorldGuard
 
 commands:
-  backrooms:
-    description: Teleport to the Backrooms world
+  liminal:
+    description: Teleport to the Liminal world
     usage: /<command>
-    permission: backrooms.use
-  backroomsadmin:
-    description: Admin commands for BackroomsGen
+    permission: liminal.use
+  liminaladmin:
+    description: Admin commands for LiminalGen
     usage: /<command> <create|reload|setlevel>
-    permission: backrooms.admin
+    permission: liminal.admin
 
 permissions:
-  backrooms.use:
-    description: Allows teleporting to the Backrooms
+  liminal.use:
+    description: Allows teleporting to the Liminal
     default: true
-  backrooms.admin:
-    description: Admin access to BackroomsGen commands
+  liminal.admin:
+    description: Admin access to LiminalGen commands
     default: op

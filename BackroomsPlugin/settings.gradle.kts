@@ -1,1 +1,1 @@
-rootProject.name = "BackroomsPlugin"
+rootProject.name = "LiminalPlugin"
