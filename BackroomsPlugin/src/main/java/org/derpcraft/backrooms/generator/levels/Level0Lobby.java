@@ -93,7 +93,12 @@ public class Level0Lobby extends BackroomsLevel {
         // Calculate floor height: ceiling height + 1 (for the ceiling block itself)
         int floorHeight = config.getCeilingHeight() + 1;
 
-        // Generate each floor
+        // Generate each floor. pendingStairwellOpening carries the local chunk
+        // coordinates of a stairwell built on the floor below; the opening
+        // through the CURRENT floor's slab is carved right after this floor's
+        // slab is laid (otherwise the slab would seal the shaft shut).
+        int[] pendingStairwellOpening = null;
+
         for (int floorIndex = 0; floorIndex < NUM_FLOORS; floorIndex++) {
             int floorBaseY = effectiveMinY + (floorIndex * floorHeight);
             int floorY = floorBaseY + getFloorOffset();
@@ -110,7 +115,16 @@ public class Level0Lobby extends BackroomsLevel {
             // Generate this floor's structure
             generateFloorAndCeiling(chunkData, floorY, ceilingY);
 
-            RoomLayout layout = calculateRoomLayout(chunkStartX, chunkStartZ, chunkEndX, chunkEndZ);
+            // Carve the passage through this floor's slab for the stairwell
+            // rising from the floor below (must happen after the slab is laid).
+            if (pendingStairwellOpening != null) {
+                carveStairwellOpening(chunkData, pendingStairwellOpening[0], pendingStairwellOpening[1], floorY);
+                pendingStairwellOpening = null;
+            }
+
+            // Each floor gets its own room layout so walls never line up
+            // between stacked floors.
+            RoomLayout layout = calculateRoomLayout(chunkStartX, chunkStartZ, chunkEndX, chunkEndZ, floorIndex);
 
             generateWallsAndDoorways(chunkData, layout, floorY, ceilingY, chunkStartX, chunkStartZ);
 
@@ -122,7 +136,8 @@ public class Level0Lobby extends BackroomsLevel {
 
             // Generate stairwell if this isn't the top floor and the room qualifies
             if (floorIndex < NUM_FLOORS - 1 && layout.overlapsRoom()) {
-                generateStairwell(chunkData, layout, floorY, ceilingY, chunkStartX, chunkStartZ, floorIndex);
+                pendingStairwellOpening = generateStairwell(
+                        chunkData, layout, floorY, ceilingY, chunkStartX, chunkStartZ, floorIndex);
             }
         }
     }
@@ -130,9 +145,25 @@ public class Level0Lobby extends BackroomsLevel {
     /**
      * Generates a stairwell connecting this floor to the next floor above.
      *
-     * <p>Stairwells are placed in rooms based on a deterministic seed. They consist
-     * of a vertical shaft with stairs going up to the next floor. The stairwell
-     * cuts through the ceiling of the current floor and the floor of the next floor.</p>
+     * <p>The stairwell is a 3x3 spiral staircase tucked into the <b>corner</b> of
+     * the room: every floor's room anchors at the same grid-cell origin (only the
+     * room sizes vary), so the shaft always sits at that shared corner with a
+     * 1-block inset. Because every floor's wall lines run at offset 0 or at least
+     * {@code roomMinWidth - 1} blocks away from the origin, no wall of any floor
+     * above or below can ever cross the shaft column &mdash; collisions are
+     * impossible by construction.</p>
+     *
+     * <p>Structure: a central support pillar topped with a sea lantern, oak stairs
+     * winding up around it (south &rarr; west &rarr; north &rarr; east), wall
+     * columns on the north/east/west faces, corners left open for the climb, and
+     * the <b>south</b> face open as the entrance (facing the room interior). When
+     * several floors in a row have stairwells they stack into a continuous
+     * climbable tower at the same corner.</p>
+     *
+     * <p>The shaft clears the current floor's ceiling; the passage through the
+     * <b>next</b> floor's slab is carved later (see {@link #carveStairwellOpening})
+     * because that floor's slab is laid after this method runs and would otherwise
+     * seal the shaft shut.</p>
      *
      * @param chunkData    the mutable chunk data
      * @param layout       the computed room layout for this chunk
@@ -141,84 +172,98 @@ public class Level0Lobby extends BackroomsLevel {
      * @param chunkStartX  world X of the chunk's western edge
      * @param chunkStartZ  world Z of the chunk's northern edge
      * @param floorIndex   the index of the current floor (0 = bottom)
+     * @return the local chunk coordinates {@code {x, z}} of the shaft centre
+     *         whose opening must be carved in the next floor's slab, or
+     *         {@code null} when this room has no stairwell (or the shaft
+     *         would span a chunk border)
      */
-    private void generateStairwell(ChunkGenerator.ChunkData chunkData,
-                                   RoomLayout layout,
-                                   int floorY, int ceilingY,
-                                   int chunkStartX, int chunkStartZ,
-                                   int floorIndex) {
+    private int[] generateStairwell(ChunkGenerator.ChunkData chunkData,
+                                    RoomLayout layout,
+                                    int floorY, int ceilingY,
+                                    int chunkStartX, int chunkStartZ,
+                                    int floorIndex) {
         // Determine if this room has a stairwell
         long stairwellSeed = seed ^ ((long) chunkStartX * 0x6a09e667L) ^ ((long) chunkStartZ * 0xbb67ae85L)
                            ^ config.getIdHashCode() ^ (floorIndex * 0x9e3779b9L);
         Random stairwellRand = new Random(stairwellSeed);
 
         if (stairwellRand.nextDouble() >= STAIRWELL_CHANCE) {
-            return; // No stairwell in this room
+            return null; // No stairwell in this room
         }
 
-        // Position the stairwell in the center of the room
-        int roomCenterX = (layout.roomStartX() + layout.roomEndX()) / 2;
-        int roomCenterZ = (layout.roomStartZ() + layout.roomEndZ()) / 2;
+        // Anchor the shaft at the room's minimum corner (shared by every floor,
+        // so stacked stairwells align into a tower and no wall line of any floor
+        // can cross the shaft column). The centre sits 2 blocks in from both
+        // walls, giving a 1-block air gap between the shaft walls and the room's
+        // own west/north walls.
+        int roomCenterX = layout.roomStartX() + 2;
+        int roomCenterZ = layout.roomStartZ() + 2;
 
-        // Check if the stairwell position is within this chunk
+        // Check if the stairwell position is within this chunk (with room for
+        // the full 3x3 shaft, so shaft centres hugging a chunk border are skipped)
         int localX = roomCenterX - chunkStartX;
         int localZ = roomCenterZ - chunkStartZ;
 
-        if (localX < 0 || localX >= 16 || localZ < 0 || localZ >= 16) {
-            return; // Stairwell is in a different chunk
+        if (localX < 1 || localX > 14 || localZ < 1 || localZ > 14) {
+            return null; // Stairwell is in a different chunk or spans the border
         }
 
-        // Create a 3x3 stairwell shaft
+        Material wallMat = config.getWallMaterial();
         int floorHeight = config.getCeilingHeight() + 1;
         int nextFloorY = floorY + floorHeight;
 
+        // Clear the shaft volume (air space + this floor's ceiling). The floor
+        // surface at floorY is left intact so the shaft has a solid base, and
+        // the next floor's slab (at nextFloorY) is carved by carveStairwellOpening.
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                int x = localX + dx;
-                int z = localZ + dz;
-
-                if (x < 0 || x >= 16 || z < 0 || z >= 16) {
-                    continue;
-                }
-
-                // Clear the shaft from current floor to next floor
-                for (int y = floorY; y < nextFloorY; y++) {
-                    chunkData.setBlock(x, y, z, Material.AIR);
-                }
-
-                // Place stairs going up (spiral pattern)
-                // Bottom layer: stairs facing north
-                if (dx == 0 && dz == -1) {
-                    chunkData.setBlock(x, floorY + 1, z, Material.OAK_STAIRS);
-                }
-                // Middle layers: alternating stairs
-                else if (dx == 1 && dz == 0) {
-                    chunkData.setBlock(x, floorY + 2, z, Material.OAK_STAIRS);
-                }
-                else if (dx == 0 && dz == 1) {
-                    chunkData.setBlock(x, floorY + 3, z, Material.OAK_STAIRS);
-                }
-                // Top layer: stairs facing west to reach next floor
-                else if (dx == -1 && dz == 0) {
-                    chunkData.setBlock(x, floorY + 4, z, Material.OAK_STAIRS);
-                }
-
-                // Place walls around the stairwell
-                if (Math.abs(dx) == 1 || Math.abs(dz) == 1) {
-                    for (int y = floorY + 1; y < nextFloorY; y++) {
-                        if (dx == -1 || dx == 1 || dz == -1 || dz == 1) {
-                            // Only place walls on the edges, not corners
-                            if ((Math.abs(dx) == 1 && dz == 0) || (Math.abs(dz) == 1 && dx == 0)) {
-                                chunkData.setBlock(x, y, z, config.getWallMaterial());
-                            }
-                        }
-                    }
+                for (int y = floorY + 1; y < nextFloorY; y++) {
+                    chunkData.setBlock(localX + dx, y, localZ + dz, Material.AIR);
                 }
             }
         }
 
-        // Add a light in the stairwell
-        chunkData.setBlock(localX, nextFloorY - 1, localZ, Material.SEA_LANTERN);
+        // Central support pillar with a light on top so the shaft is lit
+        for (int y = floorY + 1; y < ceilingY; y++) {
+            chunkData.setBlock(localX, y, localZ, wallMat);
+        }
+        chunkData.setBlock(localX, ceilingY, localZ, Material.SEA_LANTERN);
+
+        // Enclose the north, east and west faces (corners stay open so the
+        // spiral climb has room to turn). The south face stays open as the
+        // entrance, facing the room interior. Stairs below overwrite their
+        // own positions in these columns.
+        for (int y = floorY + 1; y <= ceilingY; y++) {
+            chunkData.setBlock(localX, y, localZ - 1, wallMat);     // north
+            chunkData.setBlock(localX + 1, y, localZ, wallMat);     // east
+            chunkData.setBlock(localX - 1, y, localZ, wallMat);     // west
+        }
+
+        // Spiral stairs winding up around the pillar (south -> west -> north -> east)
+        chunkData.setBlock(localX, floorY + 1, localZ + 1, Material.OAK_STAIRS);
+        chunkData.setBlock(localX - 1, floorY + 2, localZ, Material.OAK_STAIRS);
+        chunkData.setBlock(localX, floorY + 3, localZ - 1, Material.OAK_STAIRS);
+        chunkData.setBlock(localX + 1, ceilingY, localZ, Material.OAK_STAIRS);
+
+        return new int[]{localX, localZ};
+    }
+
+    /**
+     * Carves the 3x3 opening through a floor's slab for the stairwell rising
+     * from the floor below, so players can step out of the shaft onto this floor.
+     *
+     * @param chunkData the mutable chunk data
+     * @param localX    local chunk X of the shaft centre (recorded by generateStairwell)
+     * @param localZ    local chunk Z of the shaft centre
+     * @param floorY    the Y coordinate of this floor's surface (the slab to carve)
+     */
+    private void carveStairwellOpening(ChunkGenerator.ChunkData chunkData,
+                                       int localX, int localZ, int floorY) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                chunkData.setBlock(localX + dx, floorY, localZ + dz, Material.AIR);
+            }
+        }
     }
 
     /**
@@ -279,8 +324,10 @@ public class Level0Lobby extends BackroomsLevel {
         }
 
         int spacing = config.getLightSpacing();
+        // ceilingY is mixed in so each floor gets its own flicker pattern
         Random flickerRand = new Random(
-                seed ^ ((long) chunkStartX * 0x85ebca6bL) ^ ((long) chunkStartZ * 0xc2b2ae35L) ^ config.getIdHashCode()
+                seed ^ ((long) chunkStartX * 0x85ebca6bL) ^ ((long) chunkStartZ * 0xc2b2ae35L)
+                ^ config.getIdHashCode() ^ ((long) ceilingY * 0x27d4eb2fL)
         );
 
         for (int localX = 0; localX < 16; localX++) {
