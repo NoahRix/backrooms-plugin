@@ -116,6 +116,11 @@ public class FlickerTask extends BukkitRunnable {
                 continue;
             }
 
+            // Check if the chunk is loaded before accessing the block
+            if (!loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4, loc.getBlockZ() >> 4)) {
+                continue;
+            }
+
             // Verify the block is still a sea lantern (hasn't been broken)
             if (loc.getBlock().getType() != Material.SEA_LANTERN) {
                 continue;
@@ -139,6 +144,11 @@ public class FlickerTask extends BukkitRunnable {
      * @param loc the lantern location
      */
     private void startFlicker(Location loc) {
+        // Check if the chunk is loaded before accessing the block
+        if (!loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4, loc.getBlockZ() >> 4)) {
+            return; // Chunk not loaded, skip
+        }
+
         // Verify the block is still a light source (sea lantern)
         if (loc.getBlock().getType() != Material.SEA_LANTERN) {
             return; // Block has been broken or changed, skip it

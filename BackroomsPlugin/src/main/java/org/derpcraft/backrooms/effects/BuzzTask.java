@@ -10,12 +10,13 @@ import java.util.Set;
 /**
  * Per-player task that plays a proximity-based fluorescent light buzzing sound.
  * 
- * <p>This task runs on a repeating schedule and calculates the distance from the player
- * to the nearest flickering light source. The volume of the buzz sound increases as the
- * player gets closer to a light source, creating a realistic proximity-based audio effect.</p>
+ * <p>This task runs on a repeating schedule and finds the nearest flickering light source.
+ * The sound is played from the light's location, allowing Minecraft's built-in distance
+ * attenuation to dynamically adjust the volume as the player moves closer or further away.</p>
  * 
- * <p>The sound is played from the nearest light's location (not the player's location)
- * to provide spatial audio cues. Beyond a maximum distance threshold, no sound is played.</p>
+ * <p>By playing from the light's location (not the player's location), the volume changes
+ * naturally and continuously as the player moves, creating a realistic proximity-based
+ * audio effect without needing to manually calculate volume.</p>
  * 
  * <p>The effect is purely auditory - no visual changes are made.</p>
  * 
@@ -29,26 +30,17 @@ public class BuzzTask extends BukkitRunnable {
     /** The player receiving the buzz effect. */
     private final Player player;
 
-    /** Maximum volume when player is at the light source. */
-    private static final float MAX_VOLUME = 1.0f;
-
-    /** Minimum volume when player is at maximum distance. */
-    private static final float MIN_VOLUME = 0.0f;
-
     /** Maximum distance (in blocks) at which the buzz can be heard. */
-    private static final double MAX_DISTANCE = 10.0;
+    private static final double MAX_DISTANCE = 15.0;
 
-    /** Distance at which maximum volume is reached (very close to light). */
-    private static final double MIN_DISTANCE = 1.5;
-
-    /** Exponential falloff power (higher = more aggressive dropoff). */
-    private static final double FALLOFF_POWER = 3.0;
+    /** Volume at the sound source (Minecraft will attenuate based on distance). */
+    private static final float SOURCE_VOLUME = 0.5f;
 
     /** Pitch for the buzz sound (1.0 = normal). */
     private static final float BUZZ_PITCH = 1.0f;
 
-    /** Ticks between each buzz sound play (20 ticks = 1 second). */
-    private static final long BUZZ_INTERVAL = 20L; // Play every 1 second for responsive proximity
+    /** Ticks between each buzz sound play (100 ticks = 5 seconds). */
+    private static final long BUZZ_INTERVAL = 100L; // Play every 5 seconds to avoid overlap
 
     /**
      * Constructs a new buzz task for a player.
@@ -104,48 +96,9 @@ public class BuzzTask extends BukkitRunnable {
             return;
         }
 
-        // Calculate volume based on distance (inverse relationship)
-        float volume = calculateVolume(nearestDistance);
-
-        // Debug logging to see what's happening
-        manager.getPlugin().getLogger().info(
-            String.format("BuzzTask: distance=%.2f, volume=%.3f, nearestLight=%s", 
-                nearestDistance, volume, nearestLight.getBlockX() + "," + nearestLight.getBlockY() + "," + nearestLight.getBlockZ())
-        );
-
-        // Play the buzz sound at the player's location with our calculated volume
-        // This gives us full control over the volume the player hears
-        player.playSound(playerLoc, "backrooms.fluorescent_buzz", volume, BUZZ_PITCH);
-    }
-
-    /**
-     * Calculates the volume based on distance to the nearest light source.
-     * 
-     * <p>Uses an exponential falloff curve for aggressive distance-based volume reduction:
-     * <ul>
-     *   <li>At MIN_DISTANCE or closer: MAX_VOLUME (loud and clear)</li>
-     *   <li>At MAX_DISTANCE: MIN_VOLUME (inaudible)</li>
-     *   <li>Between: exponential falloff (volume drops off very quickly)</li>
-     * </ul>
-     * 
-     * <p>The exponential curve makes the sound feel more realistic - you only hear
-     * the buzz when you're close to the light, and it fades rapidly as you move away.</p>
-     * 
-     * @param distance the distance to the nearest light source
-     * @return the calculated volume (0.0 to 1.0)
-     */
-    private float calculateVolume(double distance) {
-        if (distance <= MIN_DISTANCE) {
-            return MAX_VOLUME;
-        }
-        if (distance >= MAX_DISTANCE) {
-            return MIN_VOLUME;
-        }
-
-        // Exponential falloff: volume drops off aggressively with distance
-        double ratio = (distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE);
-        double falloff = Math.pow(1.0 - ratio, FALLOFF_POWER);
-        return (float) (MIN_VOLUME + (MAX_VOLUME - MIN_VOLUME) * falloff);
+        // Play the buzz sound from the light's location
+        // Minecraft will automatically attenuate the volume based on player distance
+        player.playSound(nearestLight, "backrooms.fluorescent_buzz", SOURCE_VOLUME, BUZZ_PITCH);
     }
 
     /**
