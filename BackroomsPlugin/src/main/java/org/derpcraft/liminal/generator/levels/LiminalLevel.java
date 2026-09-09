@@ -80,8 +80,11 @@ public abstract class LiminalLevel {
                          int chunkEndX, int chunkEndZ,
                          int worldMinY, int worldMaxY) {
 
-        int effectiveMinY = Math.max(config.getMinY(), worldMinY);
-        int effectiveMaxY = Math.min(config.getMaxY(), worldMaxY);
+        // Levels step upward as the rings expand outward; the transition
+        // corridors between rings ramp smoothly between the two elevations.
+        int elevation = config.getElevationStep();
+        int effectiveMinY = Math.max(config.getMinY() + elevation, worldMinY);
+        int effectiveMaxY = Math.min(config.getMaxY() + elevation, worldMaxY);
 
         int floorY = effectiveMinY + getFloorOffset();
         int ceilingY = floorY + config.getCeilingHeight();
@@ -124,13 +127,14 @@ public abstract class LiminalLevel {
     }
 
     /**
-     * Returns the world Y coordinate of this level's ground floor surface
-     * (the block players walk on for the bottom-most floor).
+     * Returns the world Y coordinate of this level's ground-floor surface block
+     * (the block players walk on for the bottom-most floor), including the
+     * level's elevation step.
      *
-     * @return {@code config.getMinY() + getFloorOffset()}
+     * @return {@code config.getMinY() + config.getElevationStep() + getFloorOffset()}
      */
     public int getFloorSurfaceY() {
-        return config.getMinY() + getFloorOffset();
+        return config.getMinY() + config.getElevationStep() + getFloorOffset();
     }
 
     /**

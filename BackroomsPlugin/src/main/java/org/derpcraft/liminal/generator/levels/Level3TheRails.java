@@ -216,9 +216,11 @@ public class Level3TheRails extends LiminalLevel {
         data.setShape(onXLine ? org.bukkit.block.data.Rail.Shape.EAST_WEST
                               : org.bukkit.block.data.Rail.Shape.NORTH_SOUTH);
         chunkData.setBlock(lx, railY, lz, data);
-        // Archway: keep two blocks above the rail clear so riders fit through walls.
+        // Archway: keep three blocks above the rail clear so riders fit through
+        // walls comfortably (walls are up to 7 blocks tall at ceiling-height 8).
         chunkData.setBlock(lx, railY + 1, lz, Material.AIR);
         chunkData.setBlock(lx, railY + 2, lz, Material.AIR);
+        chunkData.setBlock(lx, railY + 3, lz, Material.AIR);
 
         if (powered && forcedMaterial == null) {
             placeBoosterTorch(chunkData, x, railY, z, onXLine);
@@ -278,6 +280,15 @@ public class Level3TheRails extends LiminalLevel {
         chunkData.setBlock(lx, railAt - 1, lz, wallMat);
         chunkData.setBlock(lx, railAt, lz, data);
 
+        // Open arch above the viaduct: where a room wall crosses the crossing
+        // column, the beam would otherwise sit buried inside the wall. Carve
+        // everything above the rail up to (but not including) the ceiling slab
+        // so the viaduct always passes through walls as an open gateway.
+        int ceilingY = railY - 1 + config.getCeilingHeight();
+        for (int y = railAt + 1; y < ceilingY; y++) {
+            chunkData.setBlock(lx, y, lz, Material.AIR);
+        }
+
         // Booster pylon east of the track. The centre column (dz == 0) is skipped:
         // the X line passes through it; the beam is powered from its ends anyway
         // (the data also carries powered=true).
@@ -287,6 +298,10 @@ public class Level3TheRails extends LiminalLevel {
                 chunkData.setBlock(plx, y, lz, wallMat);
             }
             chunkData.setBlock(plx, railAt, lz, Material.REDSTONE_TORCH);
+            // Keep the pylon slot open through walls as well.
+            for (int y = railAt + 1; y < ceilingY; y++) {
+                chunkData.setBlock(plx, y, lz, Material.AIR);
+            }
         }
     }
 

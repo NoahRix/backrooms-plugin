@@ -58,6 +58,13 @@ public class LiminalPopulator extends BlockPopulator {
     @Override
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random,
                          int chunkX, int chunkZ, @NotNull LimitedRegion limitedRegion) {
+        // Transition corridor chunks get their signage filled in first.
+        LiminalConfig.TransitionInfo transition = config.getTransitionForChunk(chunkX, chunkZ);
+        if (transition != null) {
+            decorateTransitionSigns(limitedRegion, chunkX, chunkZ, transition);
+            return;
+        }
+
         LevelConfig level = config.getLevelForChunk(chunkX, chunkZ);
         if (level == null || !level.isEnabled()) return;
 
@@ -94,6 +101,45 @@ public class LiminalPopulator extends BlockPopulator {
                 }
             }
         }
+    }
+
+    /** Fills in transition corridor signs: which level the player is leaving/entering. */
+    private void decorateTransitionSigns(@NotNull LimitedRegion region, int chunkX, int chunkZ,
+                                         @NotNull LiminalConfig.TransitionInfo transition) {
+        double half = config.getTransitionWidth() / 2.0;
+        double inner = transition.boundary() - half;
+        double outer = transition.boundary() + half;
+        int fromY = transition.from().getFloorSurfaceY();
+        int toY = transition.to().getFloorSurfaceY();
+
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                int globalX = chunkX * 16 + x;
+                int globalZ = chunkZ * 16 + z;
+                // The floor slopes between the two elevations — scan that band.
+                for (int y = Math.min(fromY, toY); y <= Math.max(fromY, toY) + 1; y++) {
+                    if (!region.isInRegion(globalX, y, globalZ)) continue;
+                    if (region.getType(globalX, y, globalZ) != Material.OAK_SIGN) continue;
+
+                    org.bukkit.block.BlockState state = region.getBlockState(globalX, y, globalZ);
+                    if (state instanceof org.bukkit.block.Sign sign) {
+                        double dist = Math.sqrt((double) globalX * globalX + (double) globalZ * globalZ);
+                        boolean leaving = dist < (inner + outer) / 2.0;
+                        String text = leaving
+                                ? shortLevelName(transition.from().getId()) + " \u2192"
+                                : "\u2192 " + shortLevelName(transition.to().getId());
+                        sign.setLine(1, text);
+                        sign.update();
+                    }
+                }
+            }
+        }
+    }
+
+    /** "level2" -> "LEVEL 2" for sign text. */
+    private static String shortLevelName(String id) {
+        String digits = id.replaceAll("\\D", "");
+        return "LEVEL " + (digits.isEmpty() ? id.toUpperCase() : digits);
     }
 
     /** Cryptic messages the abandoned stations announce. */

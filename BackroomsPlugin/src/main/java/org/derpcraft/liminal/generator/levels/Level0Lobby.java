@@ -87,8 +87,11 @@ public class Level0Lobby extends LiminalLevel {
                          int chunkEndX, int chunkEndZ,
                          int worldMinY, int worldMaxY) {
 
-        int effectiveMinY = Math.max(config.getMinY(), worldMinY);
-        int effectiveMaxY = Math.min(config.getMaxY(), worldMaxY);
+        // Levels step upward as the rings expand outward (the transition
+        // corridors ramp between elevations).
+        int elevation = config.getElevationStep();
+        int effectiveMinY = Math.max(config.getMinY() + elevation, worldMinY);
+        int effectiveMaxY = Math.min(config.getMaxY() + elevation, worldMaxY);
 
         // Calculate floor height: ceiling height + 1 (for the ceiling block itself)
         int floorHeight = config.getCeilingHeight() + 1;

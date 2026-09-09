@@ -2,6 +2,9 @@ package org.derpcraft.liminal.config;
 
 import org.bukkit.Material;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Data class holding the configuration parameters for a single Liminal level.
  *
@@ -63,6 +66,33 @@ public class LevelConfig {
      * beyond {@link #minRadius}).
      */
     private int maxRadius;
+
+    /**
+     * Vertical offset applied to this level's entire band, in blocks. Levels step
+     * upward as the rings expand outward (e.g. 0, 4, 8, 12), and the transition
+     * zones between rings ramp smoothly between the two elevations.
+     */
+    private int elevationStep;
+
+    /**
+     * Wall materials for the transition zone ramping into this level, ordered from
+     * the previous level's material to this level's material. Empty = derive a
+     * two-material gradient from the two levels' wall materials.
+     */
+    private List<Material> wallGradient = new ArrayList<>();
+
+    /** Floor materials for this level's inbound transition gradient (as above). */
+    private List<Material> floorGradient = new ArrayList<>();
+
+    /** Ceiling materials for this level's inbound transition gradient (as above). */
+    private List<Material> ceilingGradient = new ArrayList<>();
+
+    /**
+     * Whether this level features a rail network. When true, the inbound
+     * transition corridor lays powered rail onto its sloped walkway so carts
+     * can climb between the two elevations.
+     */
+    private boolean rails;
 
     /**
      * Height of the air space between the floor slab and ceiling slab, in blocks.
@@ -179,6 +209,46 @@ public class LevelConfig {
 
     /** Sets the outer ring radius in blocks (exclusive); a negative value means unlimited. */
     public void setMaxRadius(int maxRadius) { this.maxRadius = maxRadius; }
+
+    /** Returns the vertical offset (in blocks) applied to this level's whole band. */
+    public int getElevationStep() { return elevationStep; }
+
+    /** Sets the vertical offset (in blocks) applied to this level's whole band. */
+    public void setElevationStep(int elevationStep) { this.elevationStep = elevationStep; }
+
+    /** Returns the wall material gradient for the inbound transition (empty = derive from levels). */
+    public List<Material> getWallGradient() { return wallGradient; }
+
+    /** Sets the wall material gradient for the inbound transition. */
+    public void setWallGradient(List<Material> wallGradient) { this.wallGradient = wallGradient; }
+
+    /** Returns the floor material gradient for the inbound transition (empty = derive from levels). */
+    public List<Material> getFloorGradient() { return floorGradient; }
+
+    /** Sets the floor material gradient for the inbound transition. */
+    public void setFloorGradient(List<Material> floorGradient) { this.floorGradient = floorGradient; }
+
+    /** Returns the ceiling material gradient for the inbound transition (empty = derive from levels). */
+    public List<Material> getCeilingGradient() { return ceilingGradient; }
+
+    /** Sets the ceiling material gradient for the inbound transition. */
+    public void setCeilingGradient(List<Material> ceilingGradient) { this.ceilingGradient = ceilingGradient; }
+
+    /** Returns whether this level has a rail network that should climb its inbound ramp. */
+    public boolean isRails() { return rails; }
+
+    /** Sets whether this level has a rail network that should climb its inbound ramp. */
+    public void setRails(boolean rails) { this.rails = rails; }
+
+    /**
+     * Returns the world Y of this level's ground-floor surface block, including
+     * the level's elevation step.
+     *
+     * @return {@code minY + elevationStep + 1}
+     */
+    public int getFloorSurfaceY() {
+        return minY + elevationStep + 1;
+    }
 
     /** Returns the ceiling height in blocks. */
     public int getCeilingHeight() { return ceilingHeight; }

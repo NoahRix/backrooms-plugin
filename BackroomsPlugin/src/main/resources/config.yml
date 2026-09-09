@@ -15,8 +15,24 @@
 # tile outward from the previous level, and (optionally) implement a dedicated
 # generator subclass later. Levels without a subclass use the generic generator.
 #
-# Keep every level's min-y/max-y identical (and floor heights matching) if you
-# want players to walk seamlessly from one ring into the next.
+# == LEVEL ELEVATION & TRANSITIONS ==
+# Each level sits `elevation-step` blocks higher than the previous one, and the
+# transition corridors between rings ramp smoothly between the two elevations:
+# a sloped walkway (one block up every few steps, walkable and climbable by
+# powered rails), material gradients, perimeter walls with doorways, support
+# pillars, ceiling lights, and standing signs announcing the levels.
+# `generation.transition-width` controls the corridor width in blocks.
+#
+# Transition materials are AUTOMATIC by default: the generator interpolates the
+# two levels' own materials in colour space and picks the nearest real blocks
+# at each step of the ramp, so any level pairing works with zero configuration.
+# To art-direct a specific transition, add an optional per-level override (the
+# gradient describes blending INTO that level from the previous one):
+#   transition:
+#     wall-gradient: [MAT_A, MAT_MID, MAT_B]
+#     floor-gradient: [...]
+#     ceiling-gradient: [...]
+# Set `rails: true` on a level to have its inbound corridor climbable by rail.
 
 liminal-world-name: "liminal"
 
@@ -26,6 +42,7 @@ levels:
     name: "Level 0 - The Lobby"
     min-radius: 0
     max-radius: 400
+    elevation-step: 0
     min-y: -64
     max-y: 0
     ceiling-height: 4
@@ -47,6 +64,7 @@ levels:
     name: "Level 1 - Habitable Zone"
     min-radius: 400
     max-radius: 1200
+    elevation-step: 4
     min-y: -64
     max-y: 0
     ceiling-height: 6
@@ -68,6 +86,7 @@ levels:
     name: "Level 2 - Pipe Dreams"
     min-radius: 1200
     max-radius: 2000
+    elevation-step: 8
     min-y: -64
     max-y: 0
     ceiling-height: 5
@@ -89,9 +108,11 @@ levels:
     name: "Level 3 - The Rails"
     min-radius: 2000
     max-radius: -1
+    elevation-step: 12
+    rails: true
     min-y: -64
     max-y: 0
-    ceiling-height: 6
+    ceiling-height: 8
     room:
       min-width: 12
       max-width: 32
@@ -148,6 +169,7 @@ bluemap:
 generation:
   seed: 0
   grid-cell-size: 16
+  transition-width: 40
   stairwell-chance: 0.02
   loot-room-chance: 0.04
   hazard-room-chance: 0.03

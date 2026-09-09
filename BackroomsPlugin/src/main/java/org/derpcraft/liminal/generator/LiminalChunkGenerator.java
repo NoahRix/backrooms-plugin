@@ -45,6 +45,9 @@ public class LiminalChunkGenerator extends ChunkGenerator {
     /** Biome provider that returns THE_VOID for all positions (no natural biome features). */
     private final LiminalBiomeProvider biomeProvider;
 
+    /** Generates the transition corridors between adjacent level rings. */
+    private final TransitionZoneGenerator transitionGenerator;
+
     /**
      * Constructs a new Liminal chunk generator.
      *
@@ -53,6 +56,8 @@ public class LiminalChunkGenerator extends ChunkGenerator {
     public LiminalChunkGenerator(LiminalConfig config) {
         this.config = config;
         this.biomeProvider = new LiminalBiomeProvider();
+        this.transitionGenerator = new TransitionZoneGenerator(config,
+                config.getGenerationSeed() != 0 ? config.getGenerationSeed() : 0);
     }
 
     /**
@@ -83,11 +88,18 @@ public class LiminalChunkGenerator extends ChunkGenerator {
         int chunkEndX = chunkStartX + 16;
         int chunkEndZ = chunkStartZ + 16;
 
-        LevelConfig ring = config.getLevelForChunk(chunkX, chunkZ);
-        if (ring != null && ring.isEnabled()) {
-            LiminalLevel level = config.getLevelInstanceById(ring.getId());
-            if (level != null) {
-                level.generate(chunkData, chunkStartX, chunkStartZ, chunkEndX, chunkEndZ, worldMinY, worldMaxY);
+        LiminalConfig.TransitionInfo transition = config.getTransitionForChunk(chunkX, chunkZ);
+        if (transition != null) {
+            // Corridor chunk: sloped walkway with gradient materials, perimeter
+            // walls, signage, and (when the outer level has rails) climbing rail.
+            transitionGenerator.generate(chunkData, chunkStartX, chunkStartZ, transition);
+        } else {
+            LevelConfig ring = config.getLevelForChunk(chunkX, chunkZ);
+            if (ring != null && ring.isEnabled()) {
+                LiminalLevel level = config.getLevelInstanceById(ring.getId());
+                if (level != null) {
+                    level.generate(chunkData, chunkStartX, chunkStartZ, chunkEndX, chunkEndZ, worldMinY, worldMaxY);
+                }
             }
         }
 
@@ -220,8 +232,8 @@ public class LiminalChunkGenerator extends ChunkGenerator {
                 ? config.getLevelInstanceById(centreConfig.getId()) : null;
 
         if (centreLevel != null) {
-            // Floor surface = minY + floor offset (1); feet one block above it.
-            spawnY = centreLevel.getConfig().getMinY() + 2;
+            // Floor surface includes the level's elevation step; feet one block above it.
+            spawnY = centreLevel.getConfig().getFloorSurfaceY() + 1;
         }
 
         return new Location(world, 8.5, spawnY, 8.5);

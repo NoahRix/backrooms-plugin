@@ -58,6 +58,20 @@ public class LiminalConfig {
     /** Probability (0.0&ndash;1.0) that a room contains hazards. */
     private double hazardRoomChance;
 
+    /** Width of the transition corridor between adjacent level rings, in blocks. */
+    private int transitionWidth;
+
+    /**
+     * A pair of adjacent levels and the boundary radius where their rings meet.
+     * The transition corridor between them ramps elevation and blends materials.
+     *
+     * @param from    the inner level (closer to spawn)
+     * @param to      the outer level (farther from spawn)
+     * @param boundary the ring radius where the two levels meet
+     */
+    public record TransitionInfo(LevelConfig from, LevelConfig to, double boundary) {
+    }
+
     /** Whether mobs can spawn naturally in the Liminal world. */
     private boolean mobSpawning;
 
@@ -147,6 +161,8 @@ public class LiminalConfig {
         spawnAnimals = cfg.getBoolean("gameplay.spawn-animals", false);
         weatherEnabled = cfg.getBoolean("gameplay.weather-enabled", false);
 
+        transitionWidth = cfg.getInt("generation.transition-width", 40);
+
         blueMapEnabled = cfg.getBoolean("bluemap.enabled", true);
         blueMapMarkers = cfg.getBoolean("bluemap.markers", true);
         blueMapOverlays = cfg.getBoolean("bluemap.overlays", true);
@@ -196,6 +212,11 @@ public class LiminalConfig {
                 lc.setBrokenTrackChance(ls.getDouble("broken-track-chance", 0.0));
                 lc.setCobwebChance(ls.getDouble("cobweb-chance", 0.02));
                 lc.setGhostCartChance(ls.getDouble("ghost-cart-chance", 0.3));
+                lc.setElevationStep(ls.getInt("elevation-step", 0));
+                lc.setRails(ls.getBoolean("rails", false));
+                lc.setWallGradient(parseMaterialList(ls, "transition.wall-gradient"));
+                lc.setFloorGradient(parseMaterialList(ls, "transition.floor-gradient"));
+                lc.setCeilingGradient(parseMaterialList(ls, "transition.ceiling-gradient"));
 
                 levels.put(key, lc);
             }
@@ -264,6 +285,56 @@ public class LiminalConfig {
             }
         }
         return null;
+    }
+
+    /**
+     * Returns the transition corridor information for a chunk whose centre lies
+     * within the corridor band of an adjacent-level boundary, or {@code null} when
+     * the chunk is a pure level chunk.
+     *
+     * <p>The corridor band extends half the transition width beyond each side of
+     * the boundary plus a 16-block chunk margin, so every chunk whose cells can
+     * reach the blending zone is generated as (or by) the corridor. Transition
+     * chunks generate a sloped walkway whose floor, materials and lighting blend
+     * smoothly from the inner level to the outer level.</p>
+     *
+     * @param chunkX the chunk's X coordinate
+     * @param chunkZ the chunk's Z coordinate
+     * @return the boundary pair for this chunk, or {@code null} for pure level chunks
+     */
+    public TransitionInfo getTransitionForChunk(int chunkX, int chunkZ) {
+        double cx = chunkX * 16.0 + 8.0;
+        double cz = chunkZ * 16.0 + 8.0;
+        double dist = Math.sqrt(cx * cx + cz * cz);
+        double band = getTransitionWidth() / 2.0 + 16.0;
+
+        List<LevelConfig> rings = getRadiusSortedLevels();
+        for (int i = 0; i < rings.size() - 1; i++) {
+            LevelConfig from = rings.get(i);
+            LevelConfig to = rings.get(i + 1);
+            if (!from.isEnabled() || !to.isEnabled()) continue;
+            double boundary = to.getMinRadius();
+            if (Math.abs(dist - boundary) <= band) {
+                return new TransitionInfo(from, to, boundary);
+            }
+        }
+        return null;
+    }
+
+    /** Returns the width of the transition corridors, in blocks. */
+    public int getTransitionWidth() { return transitionWidth; }
+
+    /** Sets the width of the transition corridors, in blocks. */
+    public void setTransitionWidth(int transitionWidth) { this.transitionWidth = transitionWidth; }
+
+    /** Parses a material list config key (e.g. a gradient), skipping unknown names. */
+    private List<Material> parseMaterialList(ConfigurationSection ls, String path) {
+        List<Material> out = new ArrayList<>();
+        for (String name : ls.getStringList(path)) {
+            Material mat = Material.matchMaterial(name);
+            if (mat != null) out.add(mat);
+        }
+        return out;
     }
 
     /**
