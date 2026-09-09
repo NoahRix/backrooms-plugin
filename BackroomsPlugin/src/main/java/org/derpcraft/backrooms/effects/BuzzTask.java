@@ -107,8 +107,14 @@ public class BuzzTask extends BukkitRunnable {
         // Calculate volume based on distance (inverse relationship)
         float volume = calculateVolume(nearestDistance);
 
-        // Play the buzz sound at the player's location with calculated volume
-        // This gives us full control over what the player hears
+        // Debug logging to see what's happening
+        manager.getPlugin().getLogger().info(
+            String.format("BuzzTask: distance=%.2f, volume=%.3f, nearestLight=%s", 
+                nearestDistance, volume, nearestLight.getBlockX() + "," + nearestLight.getBlockY() + "," + nearestLight.getBlockZ())
+        );
+
+        // Play the buzz sound at the player's location with our calculated volume
+        // This gives us full control over the volume the player hears
         player.playSound(playerLoc, "backrooms.fluorescent_buzz", volume, BUZZ_PITCH);
     }
 

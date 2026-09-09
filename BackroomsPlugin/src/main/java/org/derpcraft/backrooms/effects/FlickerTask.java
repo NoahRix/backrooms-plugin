@@ -116,6 +116,11 @@ public class FlickerTask extends BukkitRunnable {
                 continue;
             }
 
+            // Verify the block is still a sea lantern (hasn't been broken)
+            if (loc.getBlock().getType() != Material.SEA_LANTERN) {
+                continue;
+            }
+
             double distance = loc.distanceSquared(playerLoc);
             if (distance <= RANGE * RANGE) {
                 nearby.add(loc);
@@ -134,6 +139,11 @@ public class FlickerTask extends BukkitRunnable {
      * @param loc the lantern location
      */
     private void startFlicker(Location loc) {
+        // Verify the block is still a light source (sea lantern)
+        if (loc.getBlock().getType() != Material.SEA_LANTERN) {
+            return; // Block has been broken or changed, skip it
+        }
+
         // Store original block data
         BlockData original = loc.getBlock().getBlockData();
         activeFlickers.put(loc, original);
