@@ -1,10 +1,10 @@
-# BackroomsGen
+# LiminalGen
 
-A Paper/Spigot plugin that adds Backrooms dimension generation to Minecraft servers. Features multi-level world generation with custom chunk generators and integrations with BlueMap, MultiWorld, WorldEdit, and WorldGuard.
+A Paper/Spigot plugin that adds Liminal dimension generation to Minecraft servers. Features multi-level world generation with custom chunk generators and integrations with BlueMap, MultiWorld, WorldEdit, and WorldGuard.
 
 ## Features
 
-- **Multi-Level Generation**: Three distinct Backrooms levels with unique themes
+- **Multi-Level Generation**: Three distinct Liminal levels with unique themes
   - Level 0 - The Lobby (classic yellow rooms)
   - Level 1 - Habitable Zone (darker, larger rooms)
   - Level 2 - Pipe Dreams (deepslate industrial theme)
@@ -23,31 +23,31 @@ A Paper/Spigot plugin that adds Backrooms dimension generation to Minecraft serv
 
 | Command | Description | Permission |
 |---------|-------------|------------|
-| `/backrooms` | Teleport to the Backrooms world | `backrooms.use` |
-| `/backroomsadmin create` | Create the Backrooms world | `backrooms.admin` |
-| `/backroomsadmin reload` | Reload configuration | `backrooms.admin` |
-| `/backroomsadmin setlevel <id>` | View level info | `backrooms.admin` |
-| `/backroomsadmin info` | Show plugin info | `backrooms.admin` |
+| `/liminal` | Teleport to the Liminal world | `liminal.use` |
+| `/liminaladmin create` | Create the Liminal world | `liminal.admin` |
+| `/liminaladmin reload` | Reload configuration | `liminal.admin` |
+| `/liminaladmin setlevel <id>` | View level info | `liminal.admin` |
+| `/liminaladmin info` | Show plugin info | `liminal.admin` |
 
 ## Building
 
 ```bash
-cd BackroomsPlugin
+cd LiminalPlugin
 ./gradlew build
 ```
 
-The compiled jar will be in `BackroomsPlugin/build/libs/`.
+The compiled jar will be in `LiminalPlugin/build/libs/`.
 
 ## Installation
 
 1. Place the compiled jar in your server's `plugins/` folder
 2. Start/restart the server
-3. Run `/backroomsadmin create` to generate the Backrooms world
-4. Players can use `/backrooms` to enter
+3. Run `/liminaladmin create` to generate the Liminal world
+4. Players can use `/liminal` to enter
 
 ## Configuration
 
-Edit `plugins/BackroomsGen/config.yml` to customize:
+Edit `plugins/LiminalGen/config.yml` to customize:
 - World name
 - Level definitions (Y ranges, room sizes, materials, lighting)
 - Gameplay settings (mob spawning, difficulty, PvP)
@@ -57,10 +57,10 @@ Edit `plugins/BackroomsGen/config.yml` to customize:
 ## Project Structure
 
 ```
-backrooms-plugin/
-├── BackroomsPlugin/     # Paper/Spigot plugin (BackroomsGen)
+liminal-plugin/
+├── LiminalPlugin/     # Paper/Spigot plugin (LiminalGen)
 └── sources/
-    ├── BackroomsMod/    # Fabric mod companion
+    ├── LiminalMod/    # Fabric mod companion
     └── Paper/           # Paper server source
 ```
 
