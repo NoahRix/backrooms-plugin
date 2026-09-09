@@ -201,14 +201,13 @@ public class BackroomsChunkGenerator extends ChunkGenerator {
     /**
      * Returns a safe spawn location for players entering the Backrooms world.
      *
-     * <p>The spawn point is placed 2 blocks above the floor of the topmost floor
-     * of Level 0 (which has multiple floors), ensuring players don't spawn inside
-     * the floor or ceiling. The X and Z coordinates are fixed at (8.5, 8.5) to
-     * place the player in the centre of the spawn chunk.</p>
+     * <p>The spawn point is placed on the first floor of Level 0, with the player's
+     * feet standing directly on the floor surface. The X and Z coordinates are fixed
+     * at (8.5, 8.5) to place the player in the centre of the spawn chunk.</p>
      *
      * @param world  the Backrooms world
      * @param random the world-specific random
-     * @return a safe spawn location above the floor
+     * @return a safe spawn location on the first floor
      */
     @Override
     public @NotNull Location getFixedSpawnLocation(@NotNull World world, @NotNull Random random) {
@@ -216,23 +215,18 @@ public class BackroomsChunkGenerator extends ChunkGenerator {
         int spawnY = world.getMinHeight() + 4;
 
         if (!enabledLevels.isEmpty()) {
-            BackroomsLevel topLevel = enabledLevels.get(0);
+            BackroomsLevel firstLevel = enabledLevels.get(0);
             
             // Check if this is Level 0 with multiple floors
-            if (topLevel instanceof org.derpcraft.backrooms.generator.levels.Level0Lobby) {
-                // Calculate the top floor of Level 0
+            if (firstLevel instanceof org.derpcraft.backrooms.generator.levels.Level0Lobby) {
+                // Calculate the first (bottom) floor of Level 0
                 int floorOffset = 2; // Level 0's floor offset
-                int ceilingHeight = topLevel.getConfig().getCeilingHeight();
-                int floorHeight = floorOffset + ceilingHeight;
-                int numFloors = 4; // Level 0 has 4 floors
-                
-                // Top floor starts at: minY + (numFloors - 1) * floorHeight + floorOffset
-                int topFloorY = topLevel.getConfig().getMinY() + ((numFloors - 1) * floorHeight) + floorOffset;
-                spawnY = topFloorY + 2; // 2 blocks above the floor
+                int floorY = firstLevel.getConfig().getMinY() + floorOffset;
+                spawnY = floorY + 1; // Player's feet on the floor surface
             } else {
                 // Single floor level
-                int floorY = topLevel.getConfig().getMinY() + topLevel.getConfig().getCeilingHeight() - 2;
-                spawnY = floorY + 2;
+                int floorY = firstLevel.getConfig().getMinY() + 2;
+                spawnY = floorY + 1; // Player's feet on the floor surface
             }
         }
 
