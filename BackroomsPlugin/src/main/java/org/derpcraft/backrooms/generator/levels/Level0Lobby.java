@@ -24,10 +24,10 @@ import java.util.Random;
  *
  * <h2>Multi-floor structure</h2>
  * <p>Level 0 generates 4 floors stacked vertically within its Y range (-64 to 0).
- * The first floor sits directly on bedrock with no subfloor space. Upper floors have
- * a 2-block subfloor space, 4-block air space, and 1-block ceiling. Floors are connected
- * by stairwells that appear in certain rooms, allowing players to move between floors
- * without leaving the level.</p>
+ * The first floor sits directly on bedrock with a 1-block offset. Each floor has
+ * 4 blocks of air space and a 1-block ceiling. Floors are connected by stairwells
+ * that appear in certain rooms, allowing players to move between floors without
+ * leaving the level.</p>
  *
  * <h2>Configuration defaults (from {@code config.yml})</h2>
  * <table>
@@ -96,8 +96,7 @@ public class Level0Lobby extends BackroomsLevel {
         // Generate each floor
         for (int floorIndex = 0; floorIndex < NUM_FLOORS; floorIndex++) {
             int floorBaseY = effectiveMinY + (floorIndex * floorHeight);
-            // First floor sits directly on bedrock (no offset), other floors have subfloor space
-            int floorY = floorBaseY + (floorIndex == 0 ? 0 : getFloorOffset());
+            int floorY = floorBaseY + getFloorOffset();
             int ceilingY = floorY + config.getCeilingHeight();
 
             // Check if this floor fits within the world bounds
@@ -225,12 +224,12 @@ public class Level0Lobby extends BackroomsLevel {
     /**
      * {@inheritDoc}
      *
-     * <p>The Lobby uses the default floor offset of 2 blocks, leaving a thin sub-floor
-     * crawlspace beneath the office carpet.</p>
+     * <p>The Lobby uses a floor offset of 1 block, placing the floor surface directly
+     * above the bedrock layer with no gap.</p>
      */
     @Override
     protected int getFloorOffset() {
-        return 2;
+        return 1;
     }
 
     /**
@@ -265,9 +264,15 @@ public class Level0Lobby extends BackroomsLevel {
             return;
         }
 
+        // Get the plugin instance (may be null during initial world generation)
+        BackroomsPlugin plugin = BackroomsPlugin.getInstance();
+        if (plugin == null) {
+            return;
+        }
+
         // Get the world for creating Location objects
-        World world = BackroomsPlugin.getInstance().getServer().getWorld(
-                BackroomsPlugin.getInstance().getBackroomsConfig().getBackroomsWorldName()
+        World world = plugin.getServer().getWorld(
+                plugin.getBackroomsConfig().getBackroomsWorldName()
         );
         if (world == null) {
             return;
