@@ -24,9 +24,10 @@ import java.util.Random;
  *
  * <h2>Multi-floor structure</h2>
  * <p>Level 0 generates 4 floors stacked vertically within its Y range (-64 to 0).
- * Each floor is 7 blocks tall (2-block subfloor + 4-block air space + 1-block ceiling).
- * Floors are connected by stairwells that appear in certain rooms, allowing players
- * to move between floors without leaving the level.</p>
+ * The first floor sits directly on bedrock with no subfloor space. Upper floors have
+ * a 2-block subfloor space, 4-block air space, and 1-block ceiling. Floors are connected
+ * by stairwells that appear in certain rooms, allowing players to move between floors
+ * without leaving the level.</p>
  *
  * <h2>Configuration defaults (from {@code config.yml})</h2>
  * <table>
@@ -95,7 +96,8 @@ public class Level0Lobby extends BackroomsLevel {
         // Generate each floor
         for (int floorIndex = 0; floorIndex < NUM_FLOORS; floorIndex++) {
             int floorBaseY = effectiveMinY + (floorIndex * floorHeight);
-            int floorY = floorBaseY + getFloorOffset();
+            // First floor sits directly on bedrock (no offset), other floors have subfloor space
+            int floorY = floorBaseY + (floorIndex == 0 ? 0 : getFloorOffset());
             int ceilingY = floorY + config.getCeilingHeight();
 
             // Check if this floor fits within the world bounds
